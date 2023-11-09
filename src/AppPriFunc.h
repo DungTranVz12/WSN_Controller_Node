@@ -1,6 +1,16 @@
 #include "define.h"
 #include "RTClib.h"
 
+// #include "SPI.h"
+// #include "Adafruit_GFX.h"
+// #include "Adafruit_ILI9341.h"
+// // For the Adafruit shield, these are the default.
+// #define TFT_DC 9
+// #define TFT_CS 10
+
+// // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
+// Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+
 RTC_DS1307 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 bool rtcHwOperFlag = false; //RTC hardware operation flag: True: RTC is working, False: RTC is not working.
@@ -18,6 +28,15 @@ void rtcInit(){
       rtcHwOperFlag = true;
       break;
     }
+  }
+  if (! rtc.isrunning()) {
+    Serial.println("RTC is NOT running, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
 }
 

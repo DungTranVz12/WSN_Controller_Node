@@ -43,6 +43,13 @@
 #define BUTTON_ENTER     27 //Button ENTER of the box inside cabinet.
 
 //***************************************
+//EEPROM address
+#define ADDR_CH1_OPER_STS      0
+#define ADDR_CH1_OPER_MODE     0
+#define ADDR_CH1_SCHDLE_TIME[] 0
+#define ADDR_CH2_OPER_STS 1
+#define ADDR_CH3_OPER_STS 2
+#define ADDR_CH4_OPER_STS 3
 
 
 
