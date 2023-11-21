@@ -8,6 +8,122 @@
 #include "Adafruit_GFX.h"     // Библиотека обработчика графики
 #include "Adafruit_ILI9341.h" // Программные драйвера для дисплеев ILI9341
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
+
+class lcdScreen
+{
+  public:
+  deviceInfo lastDev;
+  void updateScreen(void){
+    //Print with ANSI YELLOW color
+    Serial.println("\1b[31m=== TASK3: LCD RUNNING ===\1b[0m");
+    if (dev.loadFullScreenReq == 1){
+      Serial.println("Load full screen request");
+      lastDev = dev; //Update lastDev
+      loadFullScreenReq();
+      dev.loadFullScreenReq = 0; //Reset loadFullScreenReq
+    }
+    else{
+      Serial.println("======DEBUG1======");
+    }
+  }
+
+  void updateTitleBar(void){
+    //Print Time
+    DateTime now = rtc.now();
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(10,12);
+    tft.print("Time: ");
+    tft.print(now.hour());
+    tft.print(":");
+    tft.print(now.minute());
+
+    //Print connection status via a circle on the top right corner of the screen
+    tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+  }
+
+  void loadFullScreenReq (void){
+    tft.fillRect(0, 0, 320, 40, ILI9341_BLUE);
+    tft.fillRect(0, 40, 320, 240, ILI9341_WHITE);
+    tft.fillRoundRect( 10,  50, 150, 85,10, ILI9341_BLUE); //Channel 1
+    tft.fillRoundRect(165,  50, 150, 85,10, ILI9341_BLUE); //Channel 2
+    tft.fillRoundRect( 10, 140, 150, 85,10, ILI9341_BLUE); //Channel 3
+    tft.fillRoundRect(165, 140, 150, 85,10, ILI9341_BLUE); //Channel 4
+
+    //Print Time
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(10,12);
+    tft.print("Time: ");
+    tft.print(dev.time.hour());
+    tft.print(":");
+    tft.print(dev.time.minute());
+
+    //Print connection status via a circle on the top right corner of the screen
+    tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+    //Channel 1
+    uint8_t titleH = 50;
+    uint8_t titleV = 57;
+    uint8_t hItemName = 20;
+    uint8_t hItemValue = 100;
+    uint8_t vContent = 80;
+    uint8_t vSpace = 12;
+    tft.setTextColor(ILI9341_GREEN);
+    tft.setTextSize(2);
+    tft.setCursor(titleH, titleV);
+    tft.print("CH1 ON");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(hItemName, vContent+0*vSpace);
+    tft.print("Voltage: ");
+    tft.setCursor(hItemValue, vContent+0*vSpace);
+    tft.print("110V");
+    tft.setCursor(hItemName, vContent+1*vSpace);
+    tft.print("Current: ");
+    tft.setCursor(hItemValue, vContent+1*vSpace);
+    tft.print("0.5A");
+    tft.setCursor(hItemName, vContent+2*vSpace);
+    tft.print("Mode: ");
+    tft.setCursor(hItemValue, vContent+2*vSpace);
+    tft.setTextColor(ILI9341_GREEN);
+    tft.print("AUTO");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setCursor(hItemName, vContent+3*vSpace);
+    tft.print("Next OFF: ");
+    tft.setCursor(hItemValue, vContent+3*vSpace);
+    tft.setTextColor(ILI9341_GREEN);
+    tft.print("12:00");
+    tft.setTextColor(ILI9341_WHITE);
+
+
+    //Channel 2
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(3);
+    tft.setCursor(175, 70);
+    tft.print("CH2");
+    tft.setTextSize(2);
+    tft.setCursor(175, 100);
+    tft.print("OFF");
+    //Channel 3 ON
+    tft.setTextSize(3);
+    tft.setCursor(20, 160);
+    tft.print("CH3");
+    tft.setTextSize(2);
+    tft.setCursor(20, 190);
+    tft.print("OFF");
+    //Channel 4
+    tft.setTextSize(3);
+    tft.setCursor(175, 160);
+    tft.print("CH4");
+    tft.setTextSize(2);
+    tft.setCursor(175, 190);
+    tft.print("OFF");
+  }
+
+
+};
+lcdScreen lcd = lcdScreen();
+
 //////////////////////////////////////
 // Initialize for controller node   //
 //////////////////////////////////////
@@ -55,6 +171,9 @@ void controllerInit(void){
 
   //4. Initialize RTC
   rtcInit(); //Initialize RTC
+  dev.time = rtc.now(); //Get current datetime
+
+  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //Set datetime
   // rtcPrintDatetime(); //Print current datetime
   // rtcSetDatetime(2023, 11, 9, 0, 0, 0); //Set datetime
 
@@ -66,88 +185,6 @@ void controllerInit(void){
   digitalWrite(TFL_BACKLIGHT, HIGH); //Turn on LCD backlight
   tft.begin();
   tft.setRotation(3);
-  tft.fillRect(0, 0, 320, 40, ILI9341_BLUE);
-  tft.fillRect(0, 40, 320, 240, ILI9341_WHITE);
-  tft.fillRoundRect( 10,  50, 150, 85,10, ILI9341_BLUE); //Channel 1
-  tft.fillRoundRect(165,  50, 150, 85,10, ILI9341_BLUE); //Channel 2
-  tft.fillRoundRect( 10, 140, 150, 85,10, ILI9341_BLUE); //Channel 3
-  tft.fillRoundRect(165, 140, 150, 85,10, ILI9341_BLUE); //Channel 4
-
-  //Print Time
-  DateTime now = rtc.now();
-  SHT21_Read();
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(2);
-  tft.setCursor(10,12);
-  tft.print("Time: ");
-  tft.print(now.hour());
-  tft.print(":");
-  tft.print(now.minute());
-
-  //Print connection status via a circle on the top right corner of the screen
-  tft.fillCircle(290, 20, 10, ILI9341_GREEN);
-  //Channel 1
-  uint8_t titleH = 50;
-  uint8_t titleV = 57;
-  uint8_t hItemName = 20;
-  uint8_t hItemValue = 100;
-  uint8_t vContent = 80;
-  uint8_t vSpace = 12;
-  tft.setTextColor(ILI9341_GREEN);
-  tft.setTextSize(2);
-  tft.setCursor(titleH, titleV);
-  tft.print("CH1 ON");
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(1);
-  tft.setCursor(hItemName, vContent+0*vSpace);
-  tft.print("Voltage: ");
-  tft.setCursor(hItemValue, vContent+0*vSpace);
-  tft.print("110V");
-  tft.setCursor(hItemName, vContent+1*vSpace);
-  tft.print("Current: ");
-  tft.setCursor(hItemValue, vContent+1*vSpace);
-  tft.print("0.5A");
-  tft.setCursor(hItemName, vContent+2*vSpace);
-  tft.print("Mode: ");
-  tft.setCursor(hItemValue, vContent+2*vSpace);
-  tft.setTextColor(ILI9341_GREEN);
-  tft.print("AUTO");
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setCursor(hItemName, vContent+3*vSpace);
-  tft.print("Next OFF: ");
-  tft.setCursor(hItemValue, vContent+3*vSpace);
-  tft.setTextColor(ILI9341_GREEN);
-  tft.print("12:00");
-  tft.setTextColor(ILI9341_WHITE);
-
-
-  //Channel 2
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(3);
-  tft.setCursor(175, 70);
-  tft.print("CH2");
-  tft.setTextSize(2);
-  tft.setCursor(175, 100);
-  tft.print("OFF");
-  //Channel 3 ON
-  tft.setTextSize(3);
-  tft.setCursor(20, 160);
-  tft.print("CH3");
-  tft.setTextSize(2);
-  tft.setCursor(20, 190);
-  tft.print("OFF");
-  //Channel 4
-  tft.setTextSize(3);
-  tft.setCursor(175, 160);
-  tft.print("CH4");
-  tft.setTextSize(2);
-  tft.setCursor(175, 190);
-  tft.print("OFF");
-
-
-
-
-
 
   //7. SHT21
   sht.begin();
@@ -188,9 +225,11 @@ void handleEvent(AceButton* button, uint8_t eventType, uint8_t buttonState) {
 
 //===========================================================================================================//
 void task1 () {
-  V_Door   = analogRead(I_Vmon_DOOR)*(5.0/1023.0)*2;
+  // Serial.println("=== TASK 1 ===");
+
+  dev.V_Door   = analogRead(I_Vmon_DOOR)*(5.0/1023.0)*2;
   // 1.  Read button status and update button status
-  if (DOOR_INSTALLED == 1 && V_Door >= 1) {
+  if (DOOR_INSTALLED == 1 && dev.V_Door >= 1) {
     buttonScan();               //Scan button status and update button status
     digitalWrite(TFL_BACKLIGHT, LCD_ON);     //Turn on LCD backlight
   }
@@ -210,11 +249,13 @@ void task1 () {
 void task2 () {
   static uint8_t sht21TimeCounter = 0;
   sht21TimeCounter++;
+  //Print with ANSI YELLOW color
+  Serial.println("=== TASK 2 ===");
   //1. Update SH21 value and store to variable
   if (sht21TimeCounter == 10) {
     SHT21_Read();
-    // Serial.print("Temperature   : ");Serial.print(boxTemp,1);Serial.println("oC");
-    // Serial.print("Humidity      : ");Serial.print(boxHumi,1);Serial.println("%");
+    // Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
+    // Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
     sht21TimeCounter = 0;
   }
   

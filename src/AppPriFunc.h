@@ -11,23 +11,35 @@ AceButton buttonSelect(BUTTON_SELECT);
 void handleEvent(AceButton*, uint8_t, uint8_t);
 SHT2x sht;
 
-#define TFT_DC    49
-#define TFT_CS    53
-#define TFT_RST   48
-#define TFT_MISO  50
-#define TFT_MOSI  51
-#define TFT_CLK   52
+struct channelInfo {
+  float Vout = 0; //Voltage of each channel.
+  float Iout = 0; //Current of each channel.
+  uint8_t operStatus = 0; //0: OFF, 1: ON
+  uint8_t operMode = 0; //0: Manual, 1: Schedule
+  uint32_t scheduleOper[20]; //Schedule operation time of each channel.
+};
 
+struct  deviceInfo
+{
+  /* data */
+  float boxTemp = 0; //Temperature inside the box.
+  float boxHumi = 0; //Humidity inside the box.
+  float V_DC_IN = 0; //Voltage of DC input.
+  float V_SS_SYS = 0; //Voltage of sensor system.
+  float V_Door = 0; //Voltage of door sensor.
+  uint8_t rfConnStatus = 0; //0: Not connected, 1: Connected
+  uint8_t doorStatus = 0; //0: Closed, 1: Opened
+  uint8_t loadFullScreenReq = 1; //0: No request, 1: Request
+  
+  // DateTime time; //RTC time
+  DateTime time; //RTC time
 
-// #include "SPI.h"
-// #include "Adafruit_GFX.h"
-// #include "Adafruit_ILI9341.h"
-// // For the Adafruit shield, these are the default.
-// #define TFT_DC 9
-// #define TFT_CS 10
-
-// // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
-// Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+  // Channle info
+  channelInfo ch1; //Channel 1
+  channelInfo ch2; //Channel 2
+  channelInfo ch3; //Channel 3
+  channelInfo ch4; //Channel 4
+} dev;
 
 RTC_DS1307 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
@@ -35,24 +47,24 @@ bool rtcHwOperFlag = false; //RTC hardware operation flag: True: RTC is working,
 
 void SHT21_Read(){
   sht.read();
-  boxTemp = sht.getTemperature();
-  boxHumi = sht.getHumidity();
+  dev.boxTemp = sht.getTemperature();
+  dev.boxHumi = sht.getHumidity();
 }
 
 //***********************ADC reading**************************
 void voltCurrMonUpdate(){
-  V_DC_IN  = analogRead(I_Vmon_DC_IN)*(5.0/1023.0)*(47.0+10.0)/10.0;
-  V_SS_SYS = analogRead(I_Vmon_SS_SYS)*(5.0/1023.0)*2/20/0.1*1000;
+  dev.V_DC_IN  = analogRead(I_Vmon_DC_IN)*(5.0/1023.0)*(47.0+10.0)/10.0;
+  dev.V_SS_SYS = analogRead(I_Vmon_SS_SYS)*(5.0/1023.0)*2/20/0.1*1000;
   // V_Door   = analogRead(I_Vmon_DOOR)*(5.0/1023.0)*2;
 
-  Vout1 = analogRead(I_Vmon_CH1);
-  Vout2 = analogRead(I_Vmon_CH2);
-  Vout3 = analogRead(I_Vmon_CH3);
-  Vout4 = analogRead(I_Vmon_CH4);
-  Iout1 = analogRead(I_Imon_CH1);
-  Iout2 = analogRead(I_Imon_CH2);
-  Iout3 = analogRead(I_Imon_CH3);
-  Iout4 = analogRead(I_Imon_CH4);
+  dev.ch1.Vout = analogRead(I_Vmon_CH1);
+  dev.ch2.Vout = analogRead(I_Vmon_CH2);
+  dev.ch3.Vout = analogRead(I_Vmon_CH3);
+  dev.ch4.Vout = analogRead(I_Vmon_CH4);
+  dev.ch1.Iout = analogRead(I_Imon_CH1);
+  dev.ch2.Iout = analogRead(I_Imon_CH2);
+  dev.ch3.Iout = analogRead(I_Imon_CH3);
+  dev.ch4.Iout = analogRead(I_Imon_CH4);
 
   // Serial.print("V_DC_IN : ");Serial.print(V_DC_IN,1);Serial.println("V");
   // Serial.print("V_SS_SYS: ");Serial.print(V_SS_SYS,1);Serial.println("mA");
