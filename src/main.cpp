@@ -2,6 +2,8 @@
 #include <Arduino_FreeRTOS.h>
 #include "AppFunc.h"
 
+
+
 TaskHandle_t xTaskHandle_1;
 TaskHandle_t xTaskHandle_2;
 TaskHandle_t xTaskHandle_3;
@@ -9,16 +11,18 @@ TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
 
 void debugPrint(){
-  //Print with ANSI YELLOW color
   Serial.println("=== TASK4 ===");
-  
   rtcPrintDatetime(); //Print current datetime
   SHT21_Read();
   Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
   Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
   Serial.println("-----------------------------");
   // ADC_Read();
-  delay(3000);
+  delay(15000);
+}
+
+void task3 (){
+  lcd.updateScreen(); //Update screen
 }
 
 void setup() {
@@ -29,8 +33,17 @@ void setup() {
   Serial.println("\n=== END SETUP ===");
 }
 
+
 void loop() {
   task1 (); //Check button & SW
+
+
+  //TEST
+  dev.firstLoadMem = 1; //First load memory <--------------------- DEBUG
+  dev.ch[1].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
+  dev.ch[2].autoControl = CONTROL_ON; //Auto control: CONTROL_ON 
+  dev.ch[3].autoControl = CONTROL_ON; //Auto control: CONTROL_ON 
+  dev.ch[4].autoControl = CONTROL_ON; //Auto control: CONTROL_ON 
 }
 
 //-----------------------------------------------------------------------------------------------------------//
@@ -42,8 +55,8 @@ void loop() {
 //define task handles
 // void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
 void multask2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {lcd.updateScreen();vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {debugPrint(); vTaskDelay(100/portTICK_PERIOD_MS);}}
+void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
+// void multask4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {debugPrint(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
@@ -68,13 +81,13 @@ void allTaskDeclare (){
                  "display",             /* Name of the task */
                  1024,                  /* Stack size in words */
                  NULL,                  /* Task input parameter */
-                 10,                    /* Priority of the task */                                    
+                 5,                    /* Priority of the task */                                    
                  &xTaskHandle_3);       /* Task handle. */
- xTaskCreate(
-                 multask4,              /* Function to implement the task */
-                 "Debug Print",         /* Name of the task */
-                 512,                   /* Stack size in words */
-                 NULL,                  /* Task input parameter */
-                 5,                     /* Priority of the task */
-                 &xTaskHandle_4);       /* Task handle. */
+//  xTaskCreate(
+//                  multask4,              /* Function to implement the task */
+//                  "Debug Print",         /* Name of the task */
+//                  512,                   /* Stack size in words */
+//                  NULL,                  /* Task input parameter */
+//                  5,                     /* Priority of the task */
+//                  &xTaskHandle_4);       /* Task handle. */
 }

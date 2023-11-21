@@ -23,15 +23,19 @@
 #define I_SW_CH2         66 //Monitor CH2 switch of the lid outside cabinet.
 #define I_SW_CH3         67 //Monitor CH3 switch of the lid outside cabinet.
 #define I_SW_CH4         68 //Monitor CH4 switch of the lid outside cabinet.
+#define I_RL_CH1         37 //Monitor Relay of CH1.
+#define I_RL_CH2         41 //Monitor Relay of CH2.
+#define I_RL_CH3         40 //Monitor Relay of CH3.
+#define I_RL_CH4         22 //Monitor Relay of CH4.
    
-#define I_Vmon_CH1       A0 //Monitor CH1's output voltage.
-#define I_Vmon_CH2       A2 //Monitor CH2's output voltage.
-#define I_Vmon_CH3       A4 //Monitor CH3's output voltage.
-#define I_Vmon_CH4       A6 //Monitor CH4's output voltage.
-#define I_Imon_CH1       A1 //Monitor CH1's output current.
-#define I_Imon_CH2       A3 //Monitor CH2's output current.
-#define I_Imon_CH3       A5 //Monitor CH3's output current.
-#define I_Imon_CH4       A7 //Monitor CH4's output current.
+#define I_Vmon_CH1       A2 //Monitor CH1's output voltage.
+#define I_Vmon_CH2       A0 //Monitor CH2's output voltage.
+#define I_Vmon_CH3       A6 //Monitor CH3's output voltage.
+#define I_Vmon_CH4       A4 //Monitor CH4's output voltage.
+#define I_Imon_CH1       A3 //Monitor CH1's output current.
+#define I_Imon_CH2       A1 //Monitor CH2's output current.
+#define I_Imon_CH3       A7 //Monitor CH3's output current.
+#define I_Imon_CH4       A5 //Monitor CH4's output current.
    
 #define I_Vmon_DC_IN     A8 //Monitor DC input voltage.
 #define I_Vmon_SS_SYS    A9 //Monitor voltage of the sensor which measures the current of whole system.
@@ -43,6 +47,10 @@
 #define BUTTON_SELECT    27 //Button ENTER of the box inside cabinet.
 
 #define DOOR_INSTALLED   0 //0: Door sensor is not installed, 1: Door sensor is installed.
+#define MANUAL_MODE      0
+#define AUTO_MODE        1
+#define CONTROL_ON       1
+#define CONTROL_OFF      0
 
 //***************************************
 #define TFT_DC        49
@@ -54,6 +62,8 @@
 #define TFL_BACKLIGHT 35
 #define LCD_ON         1
 #define LCD_OFF        0
+#define FORCED_UPDATE  1
+#define NORMAL_UPDATE  0
 //***************************************
 //EEPROM address
 // #define ADDR_CH1_OPER_STS      0

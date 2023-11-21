@@ -1,5 +1,6 @@
 #include "define.h"
 #include <EEPROM.h>
+#include <TimerOne.h>
 #include "AppPriFunc.h"
 
 
@@ -12,18 +13,28 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_R
 class lcdScreen
 {
   public:
-  deviceInfo lastDev;
+  deviceInfo lastDev; //Last device info
+  deviceInfo proDev;  //Processing device info
+
   void updateScreen(void){
+    proDev = dev; //Update proDev
     //Print with ANSI YELLOW color
-    Serial.println("\1b[31m=== TASK3: LCD RUNNING ===\1b[0m");
-    if (dev.loadFullScreenReq == 1){
-      Serial.println("Load full screen request");
-      lastDev = dev; //Update lastDev
+    Serial.println("=== TASK3: LCD UPDATE SCREEN ===");
+    if (proDev.loadFullScreenReq == 1){
+      Serial.println("=== LCD FIRST UPDATE SCREEN ===");
+      lastDev = proDev; //Update lastDev
       loadFullScreenReq();
+      proDev.loadFullScreenReq = 0; //Reset loadFullScreenReq
       dev.loadFullScreenReq = 0; //Reset loadFullScreenReq
     }
     else{
-      Serial.println("======DEBUG1======");
+    //Update title bar
+    updateTitle(NORMAL_UPDATE);
+    //Update channel
+    updateChannel(1, NORMAL_UPDATE);
+    updateChannel(2, NORMAL_UPDATE);
+    updateChannel(3, NORMAL_UPDATE);
+    updateChannel(4, NORMAL_UPDATE);
     }
   }
 
@@ -42,7 +53,241 @@ class lcdScreen
     tft.fillCircle(290, 20, 10, ILI9341_GREEN);
   }
 
+  void updateTitle (uint8_t forcedUpdate = 0){
+    if (lastDev.time != proDev.time || forcedUpdate == FORCED_UPDATE){
+      //Clear the old text
+      tft.setTextColor(ILI9341_WHITE); //Blue is the background color
+      tft.setTextSize(2);
+      tft.setCursor(10,12);
+      tft.print("Time: ");
+      tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+      tft.print(lastDev.time.hour());
+      tft.print(":");
+      //print minute with leading zero
+      if (lastDev.time.minute() < 10)
+        tft.print("0");
+      tft.print(lastDev.time.minute());
+      //Print Time
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setTextSize(2);
+      tft.setCursor(10,12);
+      tft.print("Time: ");
+      tft.print(proDev.time.hour());
+      tft.print(":");
+      //print minute with leading zero
+      if (proDev.time.minute() < 10)
+        tft.print("0");
+      tft.print(proDev.time.minute());
+      lastDev.time = proDev.time;
+    }
+    if (lastDev.rfConnStatus != proDev.rfConnStatus || forcedUpdate == FORCED_UPDATE){
+      if (proDev.rfConnStatus == 1)
+        tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+      else
+        tft.fillCircle(290, 20, 10, ILI9341_RED);
+      lastDev.rfConnStatus = proDev.rfConnStatus;
+    }
+  }
+
+  void updateChannel(uint8_t chNum, uint8_t forcedUpdate = 0){
+
+    uint16_t titleH = 50;
+    uint16_t titleV = 57;
+    uint16_t hItemName = 20;
+    uint16_t hItemValue = 100;
+    uint16_t vContent = 80;
+    uint16_t vSpace = 12;
+
+    //Channel 1
+    if (chNum == 1){
+      titleH = 50;
+      titleV = 57;
+      hItemName = 20;
+      hItemValue = 100;
+      vContent = 80;
+      vSpace = 12;
+    }
+    //Channel 2
+    else if (chNum == 2){
+      titleH = 205;
+      titleV = 57;
+      hItemName = 175;
+      hItemValue = 265;
+      vContent = 80;
+      vSpace = 12;
+    }
+    //Channel 3
+    else if (chNum == 3){
+      titleH = 50;
+      titleV = 147;
+      hItemName = 20;
+      hItemValue = 100;
+      vContent = 170;
+      vSpace = 12;
+    }
+    //Channel 4
+    else if (chNum == 4){
+      titleH = 205;
+      titleV = 147;
+      hItemName = 175;
+      hItemValue = 265;
+      vContent = 170;
+      vSpace = 12;
+    }
+    else{
+      return;
+    }
+
+    tft.setTextColor(ILI9341_GREEN);
+    tft.setTextSize(2);
+    tft.setCursor(titleH, titleV);
+    //1. Update Channel
+    if (lastDev.ch[chNum].operStatus != proDev.ch[chNum].operStatus || forcedUpdate == FORCED_UPDATE){
+      //Clear the old text
+      tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+      tft.setCursor(titleH, titleV);
+      tft.print("CH"+String(chNum)+" ON");
+      tft.setCursor(titleH, titleV);
+      tft.print("CH"+String(chNum)+" OFF");
+      //Print Channel status
+      tft.setCursor(titleH, titleV);
+      if (proDev.ch[chNum].operStatus == 1){
+        tft.setTextColor(ILI9341_GREEN);
+        tft.print("CH"+String(chNum)+" ON");
+      }
+      else {
+        tft.setTextColor(ILI9341_RED);
+        tft.print("CH"+String(chNum)+" OFF");
+      }
+      lastDev.ch[chNum].operStatus = proDev.ch[chNum].operStatus;
+    }
+
+    tft.setTextSize(1);
+    //2. Update Voltage
+    if (lastDev.ch[chNum].Vout != proDev.ch[chNum].Vout || forcedUpdate == FORCED_UPDATE){
+      //Clear the old text
+      tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+      tft.setCursor(hItemValue, vContent+0*vSpace);
+      tft.print(lastDev.ch[chNum].Vout,0);
+      tft.print(" Step");
+      //Print Item name
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemName, vContent+0*vSpace);
+      tft.print("Voltage ");
+      //Print Voltage
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemValue, vContent+0*vSpace);
+      tft.print(proDev.ch[chNum].Vout,0);
+      tft.print(" Step");
+      lastDev.ch[chNum].Vout = proDev.ch[chNum].Vout;
+    }
+    //3. Update Current
+    if (lastDev.ch[chNum].Iout != proDev.ch[chNum].Iout || forcedUpdate == FORCED_UPDATE){
+      //Clear the old text
+      tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+      tft.setCursor(hItemValue, vContent+1*vSpace);
+      tft.print(lastDev.ch[chNum].Iout,1);
+      tft.print(" Step");
+      //Print Item name
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemName, vContent+1*vSpace);
+      tft.print("Current ");
+      //Print Current
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemValue, vContent+1*vSpace);
+      tft.print(proDev.ch[chNum].Iout,1);
+      tft.print(" Step");
+      lastDev.ch[chNum].Iout = proDev.ch[chNum].Iout;
+    }
+    //4. Update Mode
+    if (lastDev.ch[chNum].operMode != proDev.ch[chNum].operMode || forcedUpdate == FORCED_UPDATE){
+      //Clear the old text
+      tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+      tft.setCursor(hItemValue, vContent+2*vSpace);
+      tft.print("MANUAL");
+      tft.setCursor(hItemValue, vContent+2*vSpace);
+      tft.print("AUTO");
+      //Print Item name
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemName, vContent+2*vSpace);
+      tft.print("Mode ");
+      //Print Mode
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(hItemValue, vContent+2*vSpace);
+      if (proDev.ch[chNum].operMode == MANUAL_MODE) {
+        tft.setTextColor(ILI9341_RED);
+        tft.print("MANUAL");
+      }
+      else{
+        tft.setTextColor(ILI9341_GREEN);
+        tft.print("AUTO");
+      }
+      lastDev.ch[chNum].operMode = proDev.ch[chNum].operMode;
+    }
+    //5. Update Schedule
+    if (lastDev.ch[chNum].scheduleOper[0] != proDev.ch[chNum].scheduleOper[0] || forcedUpdate == FORCED_UPDATE){
+      if (proDev.ch[chNum].operMode == AUTO_MODE) {
+        proDev.ch[chNum].scheduleOper[0][0] = 11;          //<------------- DEBUG
+        proDev.ch[chNum].scheduleOper[0][1] = 30;          //<------------- DEBUG
+        //Clear the old text
+        tft.setTextColor(ILI9341_BLUE); //Blue is the background color
+        tft.setCursor(hItemValue, vContent+3*vSpace);
+        tft.print(lastDev.ch[chNum].scheduleOper[0][0]);
+        tft.print(":");
+        tft.print(lastDev.ch[chNum].scheduleOper[0][1]);
+        //Print Item name
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(hItemName, vContent+3*vSpace);
+        tft.print("Next OFF ");
+        //Print Schedule
+        tft.setTextColor(ILI9341_GREEN);
+        tft.setCursor(hItemValue, vContent+3*vSpace);
+        tft.print(proDev.ch[chNum].scheduleOper[0][0]);
+        tft.print(":");
+        tft.print(proDev.ch[chNum].scheduleOper[0][1]);
+        lastDev.ch[chNum].scheduleOper[0][0] = proDev.ch[chNum].scheduleOper[0][0];
+        lastDev.ch[chNum].scheduleOper[0][1] = proDev.ch[chNum].scheduleOper[0][1];
+      }
+      else{
+        //Draw a blue rectangle to cover the old text and item name
+        tft.fillRect(hItemName, vContent+3*vSpace, 130, 8, ILI9341_BLUE);
+      }
+    }
+  }
+
+
+
+
+  //   tft.print("CH1 ON");
+  //   tft.setTextColor(ILI9341_WHITE);
+  //   tft.setTextSize(1);
+  //   tft.setCursor(hItemName, vContent+0*vSpace);
+  //   tft.print("Voltage: ");
+  //   tft.setCursor(hItemValue, vContent+0*vSpace);
+  //   tft.print("110V");
+  //   tft.setCursor(hItemName, vContent+1*vSpace);
+  //   tft.print("Current: ");
+  //   tft.setCursor(hItemValue, vContent+1*vSpace);
+  //   tft.print("0.5A");
+  //   tft.setCursor(hItemName, vContent+2*vSpace);
+  //   tft.print("Mode: ");
+  //   tft.setCursor(hItemValue, vContent+2*vSpace);
+  //   tft.setTextColor(ILI9341_GREEN);
+  //   tft.print("AUTO");
+  //   tft.setTextColor(ILI9341_WHITE);
+  //   tft.setCursor(hItemName, vContent+3*vSpace);
+  //   tft.print("Next OFF: ");
+  //   tft.setCursor(hItemValue, vContent+3*vSpace);
+  //   tft.setTextColor(ILI9341_GREEN);
+  //   tft.print("12:00");
+  //   tft.setTextColor(ILI9341_WHITE);
+  // }
+
+
+
+
   void loadFullScreenReq (void){
+    //Draw Frame
     tft.fillRect(0, 0, 320, 40, ILI9341_BLUE);
     tft.fillRect(0, 40, 320, 240, ILI9341_WHITE);
     tft.fillRoundRect( 10,  50, 150, 85,10, ILI9341_BLUE); //Channel 1
@@ -50,75 +295,76 @@ class lcdScreen
     tft.fillRoundRect( 10, 140, 150, 85,10, ILI9341_BLUE); //Channel 3
     tft.fillRoundRect(165, 140, 150, 85,10, ILI9341_BLUE); //Channel 4
 
-    //Print Time
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(2);
-    tft.setCursor(10,12);
-    tft.print("Time: ");
-    tft.print(dev.time.hour());
-    tft.print(":");
-    tft.print(dev.time.minute());
+    //Update title bar
+    updateTitle(FORCED_UPDATE);
 
-    //Print connection status via a circle on the top right corner of the screen
-    tft.fillCircle(290, 20, 10, ILI9341_GREEN);
-    //Channel 1
-    uint8_t titleH = 50;
-    uint8_t titleV = 57;
-    uint8_t hItemName = 20;
-    uint8_t hItemValue = 100;
-    uint8_t vContent = 80;
-    uint8_t vSpace = 12;
-    tft.setTextColor(ILI9341_GREEN);
-    tft.setTextSize(2);
-    tft.setCursor(titleH, titleV);
-    tft.print("CH1 ON");
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(1);
-    tft.setCursor(hItemName, vContent+0*vSpace);
-    tft.print("Voltage: ");
-    tft.setCursor(hItemValue, vContent+0*vSpace);
-    tft.print("110V");
-    tft.setCursor(hItemName, vContent+1*vSpace);
-    tft.print("Current: ");
-    tft.setCursor(hItemValue, vContent+1*vSpace);
-    tft.print("0.5A");
-    tft.setCursor(hItemName, vContent+2*vSpace);
-    tft.print("Mode: ");
-    tft.setCursor(hItemValue, vContent+2*vSpace);
-    tft.setTextColor(ILI9341_GREEN);
-    tft.print("AUTO");
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setCursor(hItemName, vContent+3*vSpace);
-    tft.print("Next OFF: ");
-    tft.setCursor(hItemValue, vContent+3*vSpace);
-    tft.setTextColor(ILI9341_GREEN);
-    tft.print("12:00");
-    tft.setTextColor(ILI9341_WHITE);
-
-
-    //Channel 2
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(3);
-    tft.setCursor(175, 70);
-    tft.print("CH2");
-    tft.setTextSize(2);
-    tft.setCursor(175, 100);
-    tft.print("OFF");
-    //Channel 3 ON
-    tft.setTextSize(3);
-    tft.setCursor(20, 160);
-    tft.print("CH3");
-    tft.setTextSize(2);
-    tft.setCursor(20, 190);
-    tft.print("OFF");
-    //Channel 4
-    tft.setTextSize(3);
-    tft.setCursor(175, 160);
-    tft.print("CH4");
-    tft.setTextSize(2);
-    tft.setCursor(175, 190);
-    tft.print("OFF");
+    //Update channel
+    updateChannel(1, FORCED_UPDATE);
+    updateChannel(2, FORCED_UPDATE);
+    updateChannel(3, FORCED_UPDATE);
+    updateChannel(4, FORCED_UPDATE);
   }
+
+
+
+  //   //Channel 1
+  //   uint8_t titleH = 50;
+  //   uint8_t titleV = 57;
+  //   uint8_t hItemName = 20;
+  //   uint8_t hItemValue = 100;
+  //   uint8_t vContent = 80;
+  //   uint8_t vSpace = 12;
+  //   tft.setTextColor(ILI9341_GREEN);
+  //   tft.setTextSize(2);
+  //   tft.setCursor(titleH, titleV);
+  //   tft.print("CH1 ON");
+  //   tft.setTextColor(ILI9341_WHITE);
+  //   tft.setTextSize(1);
+  //   tft.setCursor(hItemName, vContent+0*vSpace);
+  //   tft.print("Voltage: ");
+  //   tft.setCursor(hItemValue, vContent+0*vSpace);
+  //   tft.print("110V");
+  //   tft.setCursor(hItemName, vContent+1*vSpace);
+  //   tft.print("Current: ");
+  //   tft.setCursor(hItemValue, vContent+1*vSpace);
+  //   tft.print("0.5A");
+  //   tft.setCursor(hItemName, vContent+2*vSpace);
+  //   tft.print("Mode: ");
+  //   tft.setCursor(hItemValue, vContent+2*vSpace);
+  //   tft.setTextColor(ILI9341_GREEN);
+  //   tft.print("AUTO");
+  //   tft.setTextColor(ILI9341_WHITE);
+  //   tft.setCursor(hItemName, vContent+3*vSpace);
+  //   tft.print("Next OFF: ");
+  //   tft.setCursor(hItemValue, vContent+3*vSpace);
+  //   tft.setTextColor(ILI9341_GREEN);
+  //   tft.print("12:00");
+  //   tft.setTextColor(ILI9341_WHITE);
+
+
+  //   //Channel 2
+  //   tft.setTextColor(ILI9341_WHITE);
+  //   tft.setTextSize(3);
+  //   tft.setCursor(175, 70);
+  //   tft.print("CH2");
+  //   tft.setTextSize(2);
+  //   tft.setCursor(175, 100);
+  //   tft.print("OFF");
+  //   //Channel 3 ON
+  //   tft.setTextSize(3);
+  //   tft.setCursor(20, 160);
+  //   tft.print("CH3");
+  //   tft.setTextSize(2);
+  //   tft.setCursor(20, 190);
+  //   tft.print("OFF");
+  //   //Channel 4
+  //   tft.setTextSize(3);
+  //   tft.setCursor(175, 160);
+  //   tft.print("CH4");
+  //   tft.setTextSize(2);
+  //   tft.setCursor(175, 190);
+  //   tft.print("OFF");
+  // }
 
 
 };
@@ -151,6 +397,10 @@ void controllerInit(void){
   pinMode(I_SW_CH2, INPUT);
   pinMode(I_SW_CH3, INPUT);
   pinMode(I_SW_CH4, INPUT);
+  pinMode(I_RL_CH1, INPUT);
+  pinMode(I_RL_CH2, INPUT);
+  pinMode(I_RL_CH3, INPUT);
+  pinMode(I_RL_CH4, INPUT);
   pinMode(BUTTON_BACK, INPUT);
   pinMode(BUTTON_DOWN, INPUT);
   pinMode(BUTTON_UP, INPUT);
@@ -162,6 +412,9 @@ void controllerInit(void){
   digitalWrite(O_LED_BAT , LOW );
   digitalWrite(O_LED_SLA , HIGH);
   digitalWrite(O_LED_PWR , LOW );
+
+  Timer1.initialize(1000); // 1 Millisecond
+  Timer1.attachInterrupt(pwmControlCheck); // blinkLED to run every 0.15 seconds
 
   // 2. Load config from EEPROM
   // operStatusCh1 = EEPROM.read();
@@ -240,22 +493,40 @@ void task1 () {
   else {
     digitalWrite(TFL_BACKLIGHT, LCD_OFF);     //Turn OFF LCD backlight
   }
-  //2. Read switch status and update switch status
+  //2. Read mode switch status and update switch status
+  dev.ch[1].operMode = digitalRead(I_SW_CH1); //1: AUTO, 0: MANUAL
+  dev.ch[2].operMode = digitalRead(I_SW_CH2); //1: AUTO, 0: MANUAL
+  dev.ch[3].operMode = digitalRead(I_SW_CH3); //1: AUTO, 0: MANUAL
+  dev.ch[4].operMode = digitalRead(I_SW_CH4); //1: AUTO, 0: MANUAL
 
-  vTaskDelay(10/portTICK_PERIOD_MS);
+  //3. Read relay status and update relay status and 1 is OFF, 0 is ON
+  dev.ch[1].operStatus = 1-digitalRead(I_RL_CH1); //0: OFF, 1: ON
+  dev.ch[2].operStatus = 1-digitalRead(I_RL_CH2); //0: OFF, 1: ON
+  dev.ch[3].operStatus = 1-digitalRead(I_RL_CH3); //0: OFF, 1: ON
+  dev.ch[4].operStatus = 1-digitalRead(I_RL_CH4); //0: OFF, 1: ON
+
+  delay(10);
 }
 
 // Run every second
 void task2 () {
-  static uint8_t sht21TimeCounter = 0;
-  sht21TimeCounter++;
-  //Print with ANSI YELLOW color
   Serial.println("=== TASK 2 ===");
+  static uint8_t sht21TimeCounter = 0;
+  static uint8_t rtcTimeCounter = 0;
+  sht21TimeCounter++;
+  rtcTimeCounter++;
+  
+  //0. Update RTC timer every minute
+  if (rtcTimeCounter >= 60) {
+    dev.time = rtc.now(); //Get current datetime
+    rtcTimeCounter = dev.time.second();
+  }
+
   //1. Update SH21 value and store to variable
-  if (sht21TimeCounter == 10) {
+  if (sht21TimeCounter >= 10) {
     SHT21_Read();
-    // Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
-    // Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
+    Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
+    Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
     sht21TimeCounter = 0;
   }
   

@@ -1,10 +1,11 @@
-feilipu/FreeRTOS@^10.5.1-1
 adafruit/RTClib@^2.1.1
-SPI
-Wire
-adafruit/Adafruit ILI9341@^1.6.0
-bxparks/AceButton@^1.10.1
 adafruit/Adafruit BusIO@^1.14.5
-bodmer/TFT_eSPI@^2.4.74
-robtillaart/SHT2x@^0.4.0
+bxparks/AceButton@^1.10.1
+Wire
 adafruit/Adafruit GFX Library@^1.11.9
+feilipu/FreeRTOS@^10.5.1-1
+SPI
+robtillaart/SHT2x@^0.4.0
+adafruit/Adafruit ILI9341@^1.6.0
+paulstoffregen/TimerOne@^1.1.1
+bodmer/TFT_eSPI@^2.4.74
