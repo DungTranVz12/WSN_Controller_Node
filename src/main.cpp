@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
 
-float boxTemp, boxHumi;
-
+float boxTemp, boxHumi; //Temperature and humidity inside the box.
+float V_DC_IN, V_SS_SYS, V_Door; //Voltage of DC input, sensor system and door sensor.
+float Vout1, Vout2, Vout3, Vout4, Iout1, Iout2, Iout3, Iout4; //Voltage and current of each channel.
 
 #include "AppFunc.h"
 TaskHandle_t xTaskHandle_1;
@@ -11,13 +12,14 @@ TaskHandle_t xTaskHandle_3;
 TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
 
+
 void debugPrint(){
   rtcPrintDatetime(); //Print current datetime
   SHT21_Read();
   Serial.print("Temperature   : ");Serial.print(boxTemp,1);Serial.println("oC");
   Serial.print("Humidity      : ");Serial.print(boxHumi,1);Serial.println("%");
   Serial.println("-----------------------------");
-  ADC_Read();
+  // ADC_Read();
   delay(3000);
 }
 
@@ -29,7 +31,7 @@ void setup() {
 }
 
 void loop() {
-
+  task1 (); //Check button & SW
 }
 
 //-----------------------------------------------------------------------------------------------------------//
@@ -40,7 +42,7 @@ void loop() {
 /////////////////////////////////
 //define task handles
 // void task1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
-// void task2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {scanButton(); vTaskDelay(10/portTICK_PERIOD_MS);}}
+void task2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
 // void task3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {displayShowing();vTaskDelay(100/portTICK_PERIOD_MS);}}
 void task4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {debugPrint(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
 //////////////////////////
@@ -53,21 +55,21 @@ void allTaskDeclare (){
 //                  "Check Button & SW",   /* Name of the task */
 //                  4096,                  /* Stack size in words */
 //                  NULL,                  /* Task input parameter */
-//                  20,                    /* Priority of the task */
+//                  20,                    /* Priority of the task */ 
 //                  &xTaskHandle_1);       /* Task handle. */
-//  xTaskCreate(
-//                  task2,                 /* Function to implement the task */
-//                  "Scan button",         /* Name of the task */
-//                  4096,                  /* Stack size in words */
-//                  NULL,                  /* Task input parameter */
-//                  10,                    /* Priority of the task */
-//                  &xTaskHandle_2);       /* Task handle. */
+ xTaskCreate(
+                 task2,                 /* Function to implement the task */
+                 "Voltage & Current Monitoring", /* Name of the task *///                  
+                 4096,                  /* Stack size in words */
+                 NULL,                  /* Task input parameter */
+                 10,                    /* Priority of the task */
+                 &xTaskHandle_2);       /* Task handle. */
 //  xTaskCreate(
 //                  task3,                 /* Function to implement the task */
 //                  "display",             /* Name of the task */
 //                  4096,                  /* Stack size in words */
 //                  NULL,                  /* Task input parameter */
-//                  10,                    /* Priority of the task */
+//                  10,                    /* Priority of the task */                                    
 //                  &xTaskHandle_3);       /* Task handle. */
  xTaskCreate(
                  task4,                 /* Function to implement the task */

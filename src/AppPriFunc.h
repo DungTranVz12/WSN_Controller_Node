@@ -1,5 +1,23 @@
 #include "define.h"
 #include "RTClib.h"
+#include <SHT2x.h>  
+#include <AceButton.h>
+
+using namespace ace_button;
+AceButton buttonBack(BUTTON_BACK);
+AceButton buttonDown(BUTTON_DOWN);
+AceButton buttonUp(BUTTON_UP);
+AceButton buttonSelect(BUTTON_SELECT);
+void handleEvent(AceButton*, uint8_t, uint8_t);
+SHT2x sht;
+
+#define TFT_DC    49
+#define TFT_CS    53
+#define TFT_RST   48
+#define TFT_MISO  50
+#define TFT_MOSI  51
+#define TFT_CLK   52
+
 
 // #include "SPI.h"
 // #include "Adafruit_GFX.h"
@@ -14,6 +32,41 @@
 RTC_DS1307 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 bool rtcHwOperFlag = false; //RTC hardware operation flag: True: RTC is working, False: RTC is not working.
+
+void SHT21_Read(){
+  sht.read();
+  boxTemp = sht.getTemperature();
+  boxHumi = sht.getHumidity();
+}
+
+//***********************ADC reading**************************
+void voltCurrMonUpdate(){
+  V_DC_IN  = analogRead(I_Vmon_DC_IN)*(5.0/1023.0)*(47.0+10.0)/10.0;
+  V_SS_SYS = analogRead(I_Vmon_SS_SYS)*(5.0/1023.0)*2/20/0.1*1000;
+  // V_Door   = analogRead(I_Vmon_DOOR)*(5.0/1023.0)*2;
+
+  Vout1 = analogRead(I_Vmon_CH1);
+  Vout2 = analogRead(I_Vmon_CH2);
+  Vout3 = analogRead(I_Vmon_CH3);
+  Vout4 = analogRead(I_Vmon_CH4);
+  Iout1 = analogRead(I_Imon_CH1);
+  Iout2 = analogRead(I_Imon_CH2);
+  Iout3 = analogRead(I_Imon_CH3);
+  Iout4 = analogRead(I_Imon_CH4);
+
+  // Serial.print("V_DC_IN : ");Serial.print(V_DC_IN,1);Serial.println("V");
+  // Serial.print("V_SS_SYS: ");Serial.print(V_SS_SYS,1);Serial.println("mA");
+  // // Serial.print("V_Door  : ");Serial.print(V_Door,1);Serial.println("V");
+  // Serial.print("V_CH1   : ");Serial.print(Vout1);Serial.println(" Step");
+  // Serial.print("V_CH2   : ");Serial.print(Vout2);Serial.println(" Step");
+  // Serial.print("V_CH3   : ");Serial.print(Vout3);Serial.println(" Step");
+  // Serial.print("V_CH4   : ");Serial.print(Vout4);Serial.println(" Step");
+  // Serial.print("I_CH1   : ");Serial.print(Iout1);Serial.println(" Step");
+  // Serial.print("I_CH2   : ");Serial.print(Iout2);Serial.println(" Step");
+  // Serial.print("I_CH3   : ");Serial.print(Iout3);Serial.println(" Step");
+  // Serial.print("I_CH4   : ");Serial.print(Iout4);Serial.println(" Step");
+  // Serial.println("-----------------------------");
+}
 
 // Initializes the RTC module and sets the rtcHwOperFlag to true if the hardware is operational.
 void rtcInit(){
@@ -72,4 +125,28 @@ void rtcSetDatetime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour, ui
   }
   rtc.adjust(DateTime(year, month, day, hour, minute, second));
   Serial.println("=== RTC is set: " + String(year) + "/" + String(month) + "/" + String(day) + " " + String(hour) + ":" + String(minute) + ":" + String(second) + " ===");
+}
+
+// Setup button pins and event handler
+void buttonInit(){
+  pinMode(BUTTON_BACK  , INPUT_PULLUP);
+  pinMode(BUTTON_DOWN  , INPUT_PULLUP);
+  pinMode(BUTTON_UP    , INPUT_PULLUP);
+  pinMode(BUTTON_SELECT, INPUT_PULLUP);
+
+  // Configure the ButtonConfig with the event handler, and enable all higher
+  // level events.
+  ButtonConfig* buttonConfig = ButtonConfig::getSystemButtonConfig();
+  buttonConfig->setEventHandler(handleEvent);
+  buttonConfig->setFeature(ButtonConfig::kFeatureClick);
+  // buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
+  buttonConfig->setFeature(ButtonConfig::kFeatureRepeatPress);
+}
+
+//Scan button status and update button status
+void buttonScan(){
+  buttonBack.check();
+  buttonDown.check();
+  buttonUp.check();
+  buttonSelect.check();
 }

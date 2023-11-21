@@ -12,12 +12,12 @@
 #define O_RELAY_4_LEVEL   3 //Control CH4 relay by level
 
 #define O_BUZZER         36 //Control buzzer
-#define O_LED_PWR        39 //Control power LED of the box inside cabinet.
 #define O_LED_4G         30 //Control 4G LED of the box inside cabinet.
 #define O_LED_RF         28 //Control RF LED of the box inside cabinet.
 #define O_LED_WIFI       26 //Control WIFI LED of the box inside cabinet.
 #define O_LED_BAT        32 //Control battery LED of the box inside cabinet.
 #define O_LED_SLA        34 //Control SLA LED of the box inside cabinet.
+#define O_LED_PWR        39 //Control power LED of the box inside cabinet.
 //Input//
 #define I_SW_CH1         65 //Monitor CH1 switch of the lid outside cabinet.
 #define I_SW_CH2         66 //Monitor CH2 switch of the lid outside cabinet.
@@ -40,16 +40,28 @@
 #define BUTTON_BACK      33 //Button BACK of the box inside cabinet.
 #define BUTTON_DOWN      31 //Button DOWN of the box inside cabinet.
 #define BUTTON_UP        29 //Button UP of the box inside cabinet.
-#define BUTTON_ENTER     27 //Button ENTER of the box inside cabinet.
+#define BUTTON_SELECT    27 //Button ENTER of the box inside cabinet.
+
+#define DOOR_INSTALLED   0 //0: Door sensor is not installed, 1: Door sensor is installed.
 
 //***************************************
+#define TFT_DC        49
+#define TFT_CS        53
+#define TFT_RST       48
+#define TFT_MISO      50
+#define TFT_MOSI      51
+#define TFT_CLK       52
+#define TFL_BACKLIGHT 35
+#define LCD_ON         1
+#define LCD_OFF        0
+//***************************************
 //EEPROM address
-#define ADDR_CH1_OPER_STS      0
-#define ADDR_CH1_OPER_MODE     0
-#define ADDR_CH1_SCHDLE_TIME[] 0
-#define ADDR_CH2_OPER_STS 1
-#define ADDR_CH3_OPER_STS 2
-#define ADDR_CH4_OPER_STS 3
+// #define ADDR_CH1_OPER_STS      0
+// #define ADDR_CH1_OPER_MODE     0
+// #define ADDR_CH1_SCHDLE_TIME[] 0
+// #define ADDR_CH2_OPER_STS 1
+// #define ADDR_CH3_OPER_STS 2
+// #define ADDR_CH4_OPER_STS 3
 
 
 
