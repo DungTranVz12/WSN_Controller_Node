@@ -2,10 +2,8 @@
 #include <EEPROM.h>
 #include "AppPriFunc.h"
 
-// #include "logo.h"
-// #include <TFT_eSPI.h>
-// TFT_eSPI    tft = TFT_eSPI();         // Create object "tft"
-// TFT_eSprite img = TFT_eSprite(&tft);  // Create Sprite object "img" with pointer to "tft" object
+
+
 //                                       // the pointer is used by pushSprite() to push it onto the TFT
 #include "Adafruit_GFX.h"     // Библиотека обработчика графики
 #include "Adafruit_ILI9341.h" // Программные драйвера для дисплеев ILI9341
@@ -68,16 +66,88 @@ void controllerInit(void){
   digitalWrite(TFL_BACKLIGHT, HIGH); //Turn on LCD backlight
   tft.begin();
   tft.setRotation(3);
-  tft.fillScreen(ILI9341_RED);
+  tft.fillRect(0, 0, 320, 40, ILI9341_BLUE);
+  tft.fillRect(0, 40, 320, 240, ILI9341_WHITE);
+  tft.fillRoundRect( 10,  50, 150, 85,10, ILI9341_BLUE); //Channel 1
+  tft.fillRoundRect(165,  50, 150, 85,10, ILI9341_BLUE); //Channel 2
+  tft.fillRoundRect( 10, 140, 150, 85,10, ILI9341_BLUE); //Channel 3
+  tft.fillRoundRect(165, 140, 150, 85,10, ILI9341_BLUE); //Channel 4
+
+  //Print Time
+  DateTime now = rtc.now();
+  SHT21_Read();
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(10,12);
+  tft.print("Time: ");
+  tft.print(now.hour());
+  tft.print(":");
+  tft.print(now.minute());
+
+  //Print connection status via a circle on the top right corner of the screen
+  tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+  //Channel 1
+  uint8_t titleH = 50;
+  uint8_t titleV = 57;
+  uint8_t hItemName = 20;
+  uint8_t hItemValue = 100;
+  uint8_t vContent = 80;
+  uint8_t vSpace = 12;
+  tft.setTextColor(ILI9341_GREEN);
+  tft.setTextSize(2);
+  tft.setCursor(titleH, titleV);
+  tft.print("CH1 ON");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(1);
+  tft.setCursor(hItemName, vContent+0*vSpace);
+  tft.print("Voltage: ");
+  tft.setCursor(hItemValue, vContent+0*vSpace);
+  tft.print("110V");
+  tft.setCursor(hItemName, vContent+1*vSpace);
+  tft.print("Current: ");
+  tft.setCursor(hItemValue, vContent+1*vSpace);
+  tft.print("0.5A");
+  tft.setCursor(hItemName, vContent+2*vSpace);
+  tft.print("Mode: ");
+  tft.setCursor(hItemValue, vContent+2*vSpace);
+  tft.setTextColor(ILI9341_GREEN);
+  tft.print("AUTO");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(hItemName, vContent+3*vSpace);
+  tft.print("Next OFF: ");
+  tft.setCursor(hItemValue, vContent+3*vSpace);
+  tft.setTextColor(ILI9341_GREEN);
+  tft.print("12:00");
+  tft.setTextColor(ILI9341_WHITE);
+
+
+  //Channel 2
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(3);
-  tft.setCursor(85,25);
-  tft.print("HELLO WSN");
-  tft.setTextColor(ILI9341_GREEN);
-  tft.setCursor(25,200);
+  tft.setCursor(175, 70);
+  tft.print("CH2");
   tft.setTextSize(2);
-  tft.print("CM Engineering Vietnam");    // Выводим текст
-  // tft.drawRGBBitmap(0, 0, logo, 240, 320);
+  tft.setCursor(175, 100);
+  tft.print("OFF");
+  //Channel 3 ON
+  tft.setTextSize(3);
+  tft.setCursor(20, 160);
+  tft.print("CH3");
+  tft.setTextSize(2);
+  tft.setCursor(20, 190);
+  tft.print("OFF");
+  //Channel 4
+  tft.setTextSize(3);
+  tft.setCursor(175, 160);
+  tft.print("CH4");
+  tft.setTextSize(2);
+  tft.setCursor(175, 190);
+  tft.print("OFF");
+
+
+
+
+
 
   //7. SHT21
   sht.begin();
