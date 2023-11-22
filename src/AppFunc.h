@@ -18,6 +18,14 @@ class lcdScreen
 
   void updateScreen(void){
     proDev = dev; //Update proDev
+    proDev.ch[1].scheduleOper[0][0] = 11;          //<------------- DEBUG
+    proDev.ch[1].scheduleOper[0][1] = 30;          //<------------- DEBUG
+    proDev.ch[2].scheduleOper[0][0] = 11;          //<------------- DEBUG
+    proDev.ch[2].scheduleOper[0][1] = 30;          //<------------- DEBUG
+    proDev.ch[3].scheduleOper[0][0] = 11;          //<------------- DEBUG
+    proDev.ch[3].scheduleOper[0][1] = 30;          //<------------- DEBUG
+    proDev.ch[4].scheduleOper[0][0] = 11;          //<------------- DEBUG
+    proDev.ch[4].scheduleOper[0][1] = 30;          //<------------- DEBUG
     //Print with ANSI YELLOW color
     Serial.println("=== TASK3: LCD UPDATE SCREEN ===");
     if (proDev.loadFullScreenReq == 1){
@@ -169,7 +177,7 @@ class lcdScreen
       tft.setTextColor(ILI9341_BLUE); //Blue is the background color
       tft.setCursor(hItemValue, vContent+0*vSpace);
       tft.print(lastDev.ch[chNum].Vout,0);
-      tft.print(" Step");
+      tft.print(" V");
       //Print Item name
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemName, vContent+0*vSpace);
@@ -178,7 +186,7 @@ class lcdScreen
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemValue, vContent+0*vSpace);
       tft.print(proDev.ch[chNum].Vout,0);
-      tft.print(" Step");
+      tft.print(" V");
       lastDev.ch[chNum].Vout = proDev.ch[chNum].Vout;
     }
     //3. Update Current
@@ -187,7 +195,7 @@ class lcdScreen
       tft.setTextColor(ILI9341_BLUE); //Blue is the background color
       tft.setCursor(hItemValue, vContent+1*vSpace);
       tft.print(lastDev.ch[chNum].Iout,1);
-      tft.print(" Step");
+      tft.print(" A");
       //Print Item name
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemName, vContent+1*vSpace);
@@ -196,7 +204,7 @@ class lcdScreen
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemValue, vContent+1*vSpace);
       tft.print(proDev.ch[chNum].Iout,1);
-      tft.print(" Step");
+      tft.print(" A");
       lastDev.ch[chNum].Iout = proDev.ch[chNum].Iout;
     }
     //4. Update Mode
@@ -215,7 +223,7 @@ class lcdScreen
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemValue, vContent+2*vSpace);
       if (proDev.ch[chNum].operMode == MANUAL_MODE) {
-        tft.setTextColor(ILI9341_RED);
+        tft.setTextColor(ILI9341_WHITE);
         tft.print("MANUAL");
       }
       else{
@@ -227,8 +235,6 @@ class lcdScreen
     //5. Update Schedule
     if (lastDev.ch[chNum].scheduleOper[0] != proDev.ch[chNum].scheduleOper[0] || forcedUpdate == FORCED_UPDATE){
       if (proDev.ch[chNum].operMode == AUTO_MODE) {
-        proDev.ch[chNum].scheduleOper[0][0] = 11;          //<------------- DEBUG
-        proDev.ch[chNum].scheduleOper[0][1] = 30;          //<------------- DEBUG
         //Clear the old text
         tft.setTextColor(ILI9341_BLUE); //Blue is the background color
         tft.setCursor(hItemValue, vContent+3*vSpace);
@@ -511,19 +517,21 @@ void task1 () {
 // Run every second
 void task2 () {
   Serial.println("=== TASK 2 ===");
-  static uint8_t sht21TimeCounter = 0;
-  static uint8_t rtcTimeCounter = 0;
+  static uint8_t sht21TimeCounter = 0; //Counter for SHT21 timer
+  static uint8_t rtcTimeCounter = 0; //Counter for RTC timer
+  static uint8_t findMaxVoltCounter = 0; //Counter for findMaxVoltage function
   sht21TimeCounter++;
   rtcTimeCounter++;
+  findMaxVoltCounter++;
   
   //0. Update RTC timer every minute
-  if (rtcTimeCounter >= 60) {
+  if (rtcTimeCounter >= 600) {
     dev.time = rtc.now(); //Get current datetime
     rtcTimeCounter = dev.time.second();
   }
 
-  //1. Update SH21 value and store to variable
-  if (sht21TimeCounter >= 10) {
+  //1. Update SH21 value and store to variable every 10 seconds
+  if (sht21TimeCounter >= 100) {
     SHT21_Read();
     Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
     Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
@@ -531,7 +539,22 @@ void task2 () {
   }
   
   //2. Update Current/Voltage of every Channel and store to variable every second
-  voltCurrMonUpdate();
+  //2.1 Sample voltage of all channels every 100ms
+  dev.ch[1].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH1);
+  dev.ch[2].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH2);
+  dev.ch[3].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH3);
+  dev.ch[4].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH4);
+  dev.ch[1].listVoltIndex++; if (dev.ch[1].listVoltIndex >= 40) dev.ch[1].listVoltIndex = 0;
+  //2.2 Find max voltage of all channels
+  if (findMaxVoltCounter >= 10) {
+    findMaxVoltage(1); //Find max voltage of channel 1
+    findMaxVoltage(2); //Find max voltage of channel 2
+    findMaxVoltage(3); //Find max voltage of channel 3
+    findMaxVoltage(4); //Find max voltage of channel 4
+    findMaxVoltCounter = 0;
+  }
+  //2.3 voltCurrMonUpdate();
+
 
   //3. Cảnh báo nếu kênh đang được mở mà dòng bằng 0 hoặc áp bằng 0
   // if (operStatusCh1 == 1 && (Vout1 == 0 || Iout1 == 0)) {

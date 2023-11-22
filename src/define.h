@@ -1,5 +1,6 @@
 #pragma once
-
+char UID[6]; //Unique ID of the controller
+ 
 //*************Define GPIO*************
 //Output//
 #define O_RELAY_1_PWM     8 //Control CH1 relay by PWM

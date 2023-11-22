@@ -11,9 +11,12 @@ AceButton buttonSelect(BUTTON_SELECT);
 void handleEvent(AceButton*, uint8_t, uint8_t);
 SHT2x sht;
 
+
 struct channelInfo {
   float Vout = 0; //Voltage of each channel.
   float Iout = 0; //Current of each channel.
+  uint16_t listVolt[40] = {0}; //List of latest 20 values of voltage of each channel.
+  uint8_t  listVoltIndex = 0; //Index of listVolt array.
   uint8_t operStatus = 0; //0: OFF, 1: ON
   uint8_t autoControl = 0; //0: OFF, 1: ON
   uint8_t operMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE
@@ -149,6 +152,36 @@ void buttonScan(){
   buttonDown.check();
   buttonUp.check();
   buttonSelect.check();
+}
+
+
+/**
+ * Finds the maximum voltage value from the list of voltage readings for a given channel.
+ * 
+ * @param chNum The channel number for which to find the maximum voltage.
+ */
+void findMaxVoltage(uint8_t chNum){
+  uint16_t maxValue = 0;
+  uint8_t  sampleNum = 40;
+  double VmaxD=0;
+  double VeffD;
+  double Veff;
+  double Voutput;
+
+  //Find max value
+  for (int i = 0; i < sampleNum; i++)
+  {
+    if (dev.ch[chNum].listVolt[i] > maxValue)
+    {
+      maxValue = dev.ch[chNum].listVolt[i];
+    }
+  }
+  VmaxD=maxValue;
+  VeffD=VmaxD/sqrt(2);
+  Veff=(((VeffD-420.76)/-90.24)*-210.2)+210.2;
+  Voutput = Veff*222.0/70.0;
+  if (Voutput < 0) Voutput = 0;
+  dev.ch[chNum].Vout = Voutput;
 }
 
 void pwmControlCheck () {
