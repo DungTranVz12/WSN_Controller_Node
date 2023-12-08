@@ -71,31 +71,6 @@ void voltCurrMonUpdate(){
 
 }
 
-// Initializes the RTC module and sets the rtcHwOperFlag to true if the hardware is operational.
-void rtcInit(){
-  //Kiểm tra tối đa 3 lần xem rtc phần cứng có chạy không? Nếu chạy thì bật cờ rtcHwOperFlag = true rồi thoát khỏi vòng lặp.
-  for (int i = 0; i < 3; i++)
-  {
-    if (! rtc.begin()) {
-      Serial.println("Couldn't find RTC");
-      Serial.flush();
-      delay(100);
-    }else{
-      rtcHwOperFlag = true;
-      break;
-    }
-  }
-  if (! rtc.isrunning()) {
-    Serial.println("RTC is NOT running, let's set the time!");
-    // When time needs to be set on a new device, or after a power loss, the
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-  }
-}
-
 // Returns the current date and time in the format: "yyyy/mm/dd (day) hh:mm:ss"
 void rtcPrintDatetime (){
   if (!rtcHwOperFlag) {
@@ -118,6 +93,28 @@ void rtcPrintDatetime (){
   Serial.print(':');
   Serial.print(now.second(), DEC);
   Serial.println();
+}
+
+// Initializes the RTC module and sets the rtcHwOperFlag to true if the hardware is operational.
+void rtcInit(){
+  //Kiểm tra tối đa 3 lần xem rtc phần cứng có chạy không? Nếu chạy thì bật cờ rtcHwOperFlag = true rồi thoát khỏi vòng lặp.
+  for (int i = 0; i < 3; i++)
+  {
+    if (! rtc.begin()) {
+      Serial.println("Couldn't find RTC");
+      Serial.flush();
+      delay(100);
+    }else{
+      rtcHwOperFlag = true;
+      break;
+    }
+  }
+  // 4.1 Set datetime to RTC with PC time
+  // rtcSetDatetime(2000, 1, 1, 0, 0, 0); //Manual set datetime
+  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //PC set datetime
+  rtcPrintDatetime(); //Print current datetime
+  // 4.2 Set datetime to dev.time
+  dev.time = rtc.now(); //Get current datetime
 }
 
 // Sets the date and time for the RTC module.
@@ -181,7 +178,7 @@ void findMaxVoltage(uint8_t chNum){
   Veff=(((VeffD-420.76)/-90.24)*-210.2)+210.2;
   Voutput = Veff*222.0/70.0;
   if (Voutput < 0) Voutput = 0;
-  dev.ch[chNum].Vout = Voutput;
+  dev.ch[chNum].Vout = int(Voutput);
 }
 
 void pwmControlCheck () {

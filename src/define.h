@@ -1,5 +1,5 @@
 #pragma once
-char UID[6]; //Unique ID of the controller
+char UID[20]; //Unique ID of the controller
  
 //*************Define GPIO*************
 //Output//
