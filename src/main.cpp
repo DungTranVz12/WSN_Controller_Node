@@ -58,6 +58,7 @@ void controllerInit(void){
   pinMode(I_RL_CH2, INPUT);          //Set pin mode for relay channel 2 (read status)
   pinMode(I_RL_CH3, INPUT);          //Set pin mode for relay channel 3 (read status)
   pinMode(I_RL_CH4, INPUT);          //Set pin mode for relay channel 4 (read status)
+  pinMode(I_Slave_RDY, INPUT);       //Set pin mode for Slave RDY
   pinMode(BUTTON_BACK, INPUT);       //Set pin mode for button BACK
   pinMode(BUTTON_DOWN, INPUT);       //Set pin mode for button DOWN
   pinMode(BUTTON_UP, INPUT);         //Set pin mode for button UP
@@ -101,9 +102,10 @@ void setup() {
 
   //2. print 6 bytes of UniqueID
   sprintf(UID, "%02X%02X%02X%02X%02X%02X", UniqueID[0], UniqueID[1], UniqueID[2]);
-  String UIDstr = String(UID[0]) + String(UID[1]) + String(UID[2]) + String(UID[3]) + String(UID[4]) + String(UID[5]);
+  UIDstr = String(UID[0]) + String(UID[1]) + String(UID[2]) + String(UID[3]) + String(UID[4]) + String(UID[5]);
   Serial.print("Unique ID: ");
   Serial.println(UIDstr);
+
 
   // //3. Test send some message to Slave
   // unsigned long lastMillis = millis(); //Initialize lastMillis
@@ -156,7 +158,7 @@ void loop() {
 // void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
 void multask2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
 void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {debugPrint(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(10/portTICK_PERIOD_MS);}}
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
@@ -183,11 +185,11 @@ void allTaskDeclare (){
                  NULL,                  /* Task input parameter */
                  10,                    /* Priority of the task */                                    
                  &xTaskHandle_3);       /* Task handle. */
-//  xTaskCreate(
-//                  multask4,              /* Function to implement the task */
-//                  "Debug Print",         /* Name of the task */
-//                  512,                   /* Stack size in words */
-//                  NULL,                  /* Task input parameter */
-//                  10,                     /* Priority of the task */
-//                  &xTaskHandle_4);       /* Task handle. */
+ xTaskCreate(
+                 multask4,              /* Function to implement the task */
+                 "RF communication",    /* Name of the task */
+                 512,                   /* Stack size in words */
+                 NULL,                  /* Task input parameter */
+                 10,                     /* Priority of the task */
+                 &xTaskHandle_4);       /* Task handle. */
 }

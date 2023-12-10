@@ -8,9 +8,11 @@ void task2 () {
   static uint16_t sht21TimeCounter = 0;   //Counter for SHT21 timer
   static uint16_t rtcTimeCounter = 0;     //Counter for RTC timer
   static uint16_t findMaxVoltCounter = 0; //Counter for findMaxVoltage function
+  static uint16_t sendWdtCounter = 0;     //Counter for WDT timer
   sht21TimeCounter++;
   rtcTimeCounter++;
   findMaxVoltCounter++;
+  sendWdtCounter++;
   
   //1. Update RTC timer every minute
   if (rtcTimeCounter >= 600) {
@@ -18,11 +20,18 @@ void task2 () {
     rtcTimeCounter = dev.time.second()*10; //Reset RTC timer counter
   }
 
-  //2. Update SH21 value and store to variable every 10 seconds
+  //2. Update RTC timer every minute
+  if (sendWdtCounter >= 600) {
+    rfSend("10","TASK1_OK");
+    rfSend("10","TASK2_OK");
+    sendWdtCounter = 0;
+  }
+
+  //3. Update SH21 value and store to variable every 10 seconds
   if (sht21TimeCounter >= 100) {
     SHT21_Read();
-    Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
-    Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
+    // Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
+    // Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
     sht21TimeCounter = 0;
   }
   

@@ -1,5 +1,12 @@
 #pragma once
+#include <ArduinoQueue.h>
+#define QUEUE_SIZE_ITEMS 5
+ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
+ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
 char UID[20]; //Unique ID of the controller
+String UIDstr = ""; //Unique ID of the controller
+String nodeType = "04" ; //Node type: 04: Controller
+
  
 //*************Define GPIO*************
 //Output//
@@ -41,6 +48,7 @@ char UID[20]; //Unique ID of the controller
 #define I_Vmon_DC_IN     A8 //Monitor DC input voltage.
 #define I_Vmon_SS_SYS    A9 //Monitor voltage of the sensor which measures the current of whole system.
 #define I_Vmon_DOOR     A15 //Monitor voltage status of the door.
+#define I_Slave_RDY     20  //Monitor Slave RDY pin.
    
 #define BUTTON_BACK      33 //Button BACK of the box inside cabinet.
 #define BUTTON_DOWN      31 //Button DOWN of the box inside cabinet.
