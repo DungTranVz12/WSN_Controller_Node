@@ -5,7 +5,12 @@ ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
 ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
 char UID[20]; //Unique ID of the controller
 String UIDstr = ""; //Unique ID of the controller
-String nodeType = "04" ; //Node type: 04: Controller
+String nodeType = "03" ; //Node type: 03: Controller
+String fwVer = "V0.1"; //Firmware version
+bool joinRequestSent = false; //Flag to check if join request has been sent
+unsigned long lastJoinRequestTime = millis() - 60000; //Last time join request was sent
+bool setupDoneFlag = false; //Flag to check if setup process is done
+bool receivedA1Flag = false; //Reset receivedA1Flag
 
  
 //*************Define GPIO*************

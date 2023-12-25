@@ -17,9 +17,10 @@ struct channelInfo {
   float Iout = 0; //Current of each channel.
   uint16_t listVolt[40] = {0}; //List of latest 20 values of voltage of each channel.
   uint8_t  listVoltIndex = 0; //Index of listVolt array.
-  uint8_t operStatus = 0; //0: OFF, 1: ON
-  uint8_t autoControl = 0; //0: OFF, 1: ON
+  uint8_t operStatus = CONTROL_OFF; //0: OFF, 1: ON
+  uint8_t autoControl = CONTROL_OFF; //0: OFF, 1: ON
   uint8_t operMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE
+  bool    inScheduleFlag = false; //0: Not in schedule, 1: In schedule
   uint32_t scheduleOper[20][2]; //Schedule operation time of each channel.
 };
 
@@ -32,7 +33,8 @@ struct  deviceInfo
   float V_DC_IN = 0; //Voltage of DC input.
   float V_SS_SYS = 0; //Voltage of sensor system.
   float V_Door = 0; //Voltage of door sensor.
-  uint8_t rfConnStatus = 0; //0: Not connected, 1: Connected
+  uint8_t  rfConnStatus = 0; //0: Not connected, 1: Connected
+  uint16_t rfStatusCounter = 0; //Counter for RF status
   uint8_t doorStatus = 0; //0: Closed, 1: Opened
   uint8_t loadFullScreenReq = 1; //0: No request, 1: Request
   uint8_t firstLoadMem = 0; //0: Not loaded, 1: Loaded

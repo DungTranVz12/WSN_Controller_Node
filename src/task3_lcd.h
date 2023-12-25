@@ -43,16 +43,25 @@ class lcdScreen
     }
   }
 
-  void updateSemiSec(){
-    static bool semiSecFlag = true;
-    if (semiSecFlag){
+  /**
+   * @brief Updates the semi-second display on the LCD screen.
+   * 
+   * This function toggles the display of the semi-second on the LCD screen.
+   * It prints the current time in hours and minutes, along with a colon (:).
+   * The semi-second display is updated every time this function is called.
+   * 
+   * @note This function assumes that the TFT display (tft) and the time object (proDev.time) are properly initialized.
+   */
+  void updateSecColon(){
+    static bool SecColonFlag = true;
+    if (SecColonFlag){
       tft.setTextColor(ILI9341_WHITE);
       tft.setTextSize(2);
       tft.setCursor(10,12);
       tft.print("Time ");
       tft.print(proDev.time.hour());
       tft.print(":");
-      semiSecFlag = false;
+      SecColonFlag = false;
     }
     else{
       tft.setTextColor(ILI9341_WHITE);
@@ -62,10 +71,16 @@ class lcdScreen
       tft.print(proDev.time.hour());
       tft.setTextColor(ILI9341_BLUE); //Blue is the background color
       tft.print(":");
-      semiSecFlag = true;
+      SecColonFlag = true;
     }
   }
 
+  /**
+   * @brief Updates the title bar on the LCD screen.
+   * 
+   * This function prints the current time and displays the connection status
+   * via a circle on the top right corner of the screen.
+   */
   void updateTitleBar(void){
     //Print Time
     DateTime now = rtc.now();
@@ -81,6 +96,15 @@ class lcdScreen
     tft.fillCircle(290, 20, 10, ILI9341_GREEN);
   }
 
+  /**
+   * @brief Updates the title on the LCD screen.
+   * 
+   * This function updates the title on the LCD screen based on the current time and RF connection status.
+   * If the time or forcedUpdate flag is set, the function clears the old text and prints the new time.
+   * If the loadFullScreenReq flag is set, the function updates the RF connection status indicator.
+   * 
+   * @param forcedUpdate Flag indicating whether the update is forced or not. Default is 0.
+   */
   void updateTitle (uint8_t forcedUpdate = 0){
     if (lastDev.time != proDev.time || forcedUpdate == FORCED_UPDATE){
       //Clear the old text
@@ -108,12 +132,22 @@ class lcdScreen
       tft.print(proDev.time.minute());
       lastDev.time = proDev.time;
     }
-    if (lastDev.rfConnStatus != proDev.rfConnStatus || forcedUpdate == FORCED_UPDATE){
-      if (proDev.rfConnStatus == 1)
-        tft.fillCircle(290, 20, 10, ILI9341_GREEN);
-      else
-        tft.fillCircle(290, 20, 10, ILI9341_RED);
-      lastDev.rfConnStatus = proDev.rfConnStatus;
+    if (proDev.loadFullScreenReq == 1){
+        if (dev.rfConnStatus == 1)
+          tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+        else
+          tft.fillCircle(290, 20, 10, ILI9341_RED);
+        proDev.rfConnStatus = dev.rfConnStatus;
+        lastDev.rfConnStatus = dev.rfConnStatus;
+    }
+    else{
+      if (lastDev.rfConnStatus != proDev.rfConnStatus || forcedUpdate == FORCED_UPDATE){
+        if (proDev.rfConnStatus == 1)
+          tft.fillCircle(290, 20, 10, ILI9341_GREEN);
+        else
+          tft.fillCircle(290, 20, 10, ILI9341_RED);
+        lastDev.rfConnStatus = proDev.rfConnStatus;
+      }
     }
   }
 
@@ -399,5 +433,5 @@ lcdScreen lcd = lcdScreen();
 
 void task3 (){
   lcd.updateScreen(); //Update screen
-  lcd.updateSemiSec();
+  lcd.updateSecColon();
 }

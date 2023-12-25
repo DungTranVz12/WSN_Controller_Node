@@ -13,6 +13,7 @@ void task2 () {
   rtcTimeCounter++;
   findMaxVoltCounter++;
   sendWdtCounter++;
+  dev.rfStatusCounter++; //Counter for RF status
   
   //1. Update RTC timer every minute
   if (rtcTimeCounter >= 600) {
@@ -35,6 +36,12 @@ void task2 () {
     sht21TimeCounter = 0;
   }
   
+  //3. Check and control RF status
+  if (dev.rfStatusCounter >= 18000){ //18000*100ms = 30min
+    dev.rfConnStatus = 0; //0: Not connected, 1: Connected
+    digitalWrite(O_LED_RF, HIGH); //Turn off LED RF
+  }
+
   //4. Update Current/Voltage of every Channel and store to variable every second
   //4.1 Sample voltage of all channels every 100ms
   dev.ch[1].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH1);

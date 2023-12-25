@@ -1,17 +1,19 @@
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
 #include <ArduinoUniqueID.h>
-#include "AppFunc.h"
+#include "define.h"
 #include "task1_user_button_sw.h"
 #include "task2_Internal_control.h"
 #include "task3_lcd.h"
 #include "task4_rf_com.h"
+#include "AppFunc.h"
 
 TaskHandle_t xTaskHandle_1;
 TaskHandle_t xTaskHandle_2;
 TaskHandle_t xTaskHandle_3;
 TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
+workingFlowClass workingFlow;
 
 void debugPrint(){
   Serial.println("=== DEBUG ===");
@@ -133,9 +135,15 @@ void setup() {
   //   }
   // }
 
+
+  workingFlow.setupFlow();
   Serial.println("\n=== START ALL TASKS ===");
   allTaskDeclare ();
   Serial.println("\n=== END SETUP ===");
+  setupDoneFlag = true;
+
+
+  // rfSendToGateway("A6","START_WPS_MODE"); //<--------------------- DEBUG
 }
 
 void loop() {
@@ -158,7 +166,7 @@ void loop() {
 // void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
 void multask2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
 void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(65/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(10/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(1000/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(10/portTICK_PERIOD_MS);}}
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
