@@ -204,7 +204,7 @@ class lcdScreen
     tft.setTextSize(2);
     tft.setCursor(titleH, titleV);
     //1. Update Channel
-    if (lastDev.ch[chNum].operStatus != proDev.ch[chNum].operStatus || forcedUpdate == FORCED_UPDATE){
+    if (lastDev.ch[chNum].i_contactorStatus != proDev.ch[chNum].i_contactorStatus || forcedUpdate == FORCED_UPDATE){
       //Clear the old text
       tft.setTextColor(ILI9341_BLUE); //Blue is the background color
       tft.setCursor(titleH, titleV);
@@ -213,7 +213,7 @@ class lcdScreen
       tft.print("CH"+String(chNum)+" OFF");
       //Print Channel status
       tft.setCursor(titleH, titleV);
-      if (proDev.ch[chNum].operStatus == 1){
+      if (proDev.ch[chNum].i_contactorStatus == 1){
         tft.setTextColor(ILI9341_GREEN);
         tft.print("CH"+String(chNum)+" ON");
       }
@@ -221,7 +221,7 @@ class lcdScreen
         tft.setTextColor(ILI9341_RED);
         tft.print("CH"+String(chNum)+" OFF");
       }
-      lastDev.ch[chNum].operStatus = proDev.ch[chNum].operStatus;
+      lastDev.ch[chNum].i_contactorStatus = proDev.ch[chNum].i_contactorStatus;
     }
 
     tft.setTextSize(1);
@@ -262,7 +262,7 @@ class lcdScreen
       lastDev.ch[chNum].Iout = proDev.ch[chNum].Iout;
     }
     //4. Update Mode
-    if (lastDev.ch[chNum].operMode != proDev.ch[chNum].operMode || forcedUpdate == FORCED_UPDATE){
+    if (lastDev.ch[chNum].i_switchMode != proDev.ch[chNum].i_switchMode || forcedUpdate == FORCED_UPDATE){
       //Clear the old text
       tft.setTextColor(ILI9341_BLUE); //Blue is the background color
       tft.setCursor(hItemValue, vContent+2*vSpace);
@@ -276,7 +276,7 @@ class lcdScreen
       //Print Mode
       tft.setTextColor(ILI9341_WHITE);
       tft.setCursor(hItemValue, vContent+2*vSpace);
-      if (proDev.ch[chNum].operMode == MANUAL_MODE) {
+      if (proDev.ch[chNum].i_switchMode == MANUAL_MODE) {
         tft.setTextColor(ILI9341_WHITE);
         tft.print("MANUAL");
       }
@@ -284,11 +284,11 @@ class lcdScreen
         tft.setTextColor(ILI9341_GREEN);
         tft.print("AUTO");
       }
-      lastDev.ch[chNum].operMode = proDev.ch[chNum].operMode;
+      lastDev.ch[chNum].i_switchMode = proDev.ch[chNum].i_switchMode;
     }
     //5. Update Schedule
     if (lastDev.ch[chNum].scheduleOper[0] != proDev.ch[chNum].scheduleOper[0] || forcedUpdate == FORCED_UPDATE){
-      if (proDev.ch[chNum].operMode == AUTO_MODE) {
+      if (proDev.ch[chNum].i_switchMode == AUTO_MODE) {
         //Clear the old text
         tft.setTextColor(ILI9341_BLUE); //Blue is the background color
         tft.setCursor(hItemValue, vContent+3*vSpace);

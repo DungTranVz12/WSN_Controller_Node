@@ -16,6 +16,7 @@ uint8_t  reqSyncSIDIndex = 0; //Request sync SID list index
 uint16_t alreadySyncSID[100] = {0}; //Already sync SID list
 uint8_t  alreadySyncSIDIndex = 0; //Already sync SID list index
 
+
 extern void rfSendToGateway(String cmdResp="C2", String payload="");
 extern String waitCommandWithString(String header="A1", String str ="", uint16_t timeOutSec = 30);
 extern void updateSyncTime(String message);
@@ -189,28 +190,35 @@ bool __checkDateMatch(schedule_t schedule){
   }
 }
 
+
 /**
- * Function to control a channel in auto mode
- * @brief This is a function to control a channel in auto mode. Then, it iterates through the schedule list and checks if there is any schedule that matches the current time and date. If there is a match, it turns on the channel and sets the  inScheduleFlag  to true. If no schedule matches, it turns off the channel. 
- * @param checkedChannel: the channel to be checked
+ * Controls the channel in auto mode based on the schedule list.
+ * 
+ * @param checkedChannel The channel to be checked (default is 1).
  */
-void __controlChannelInAutoMode(uint8_t checkedChannel = 1){
-  if (dev.ch[checkedChannel].operMode == AUTO_MODE) {
+void __controlChannelInAutoModeByScheduleList(uint8_t checkedChannel = 1){
+  if (dev.ch[checkedChannel].i_switchMode == AUTO_MODE) {
+    //Nếu không có Remote Control bằng tay trên App thì mới kiểm tra schedule
     for (uint8_t i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
       if (scheduleList[i].enableFlag == true && scheduleList[i].channel == checkedChannel) {
         if (__checkTimeMatch(scheduleList[i]) && __checkDateMatch(scheduleList[i])) {
           //Turn ON channel
-          Serial.println("       => Channel "+String(checkedChannel)+" is opened");
-          dev.ch[checkedChannel].autoControl = CONTROL_ON;
-          dev.ch[checkedChannel].inScheduleFlag = true; //Set inScheduleFlag = true
-          break;
+          if (dev.ch[checkedChannel].inScheduleFlag == false){
+            Serial.println("       => Channel "+String(checkedChannel)+" is opened");
+            dev.ch[checkedChannel].autoControl = CONTROL_ON;
+            dev.ch[checkedChannel].inScheduleFlag = true; //Set inScheduleFlag = true
+            dev.ch[checkedChannel].remoteControlFlag = false; //Set remoteControlFlag = false
+            break;
+          }
         }
       }
     }
-    //Nếu không có schedule nào thỏa mãn thì đóng kênh
+    //Nếu không có schedule nào thỏa mãn thì đóng kênh nếu trước đó nó có đang nằm trong một schedule nào đó.
     if (dev.ch[checkedChannel].inScheduleFlag == true) {
       Serial.println("       => Channel "+String(checkedChannel)+" is closed");
       dev.ch[checkedChannel].autoControl = CONTROL_OFF;
+      dev.ch[checkedChannel].inScheduleFlag = false; //Set inScheduleFlag = false
+      dev.ch[checkedChannel].remoteControlFlag = false; //Set remoteControlFlag = false
     }
   }
 }
@@ -222,13 +230,13 @@ void __controlChannelInAutoMode(uint8_t checkedChannel = 1){
 void firstControlInAutoMode(){
   Serial.println("=== 3. First check & control in auto mode... ===");
   //1. Check channel 1
-  __controlChannelInAutoMode(1); //Check channel 1
+  __controlChannelInAutoModeByScheduleList(1); //Check channel 1
   //2. Check channel 2
-  __controlChannelInAutoMode(2); //Check channel 2
+  __controlChannelInAutoModeByScheduleList(2); //Check channel 2
   //3. Check channel 3
-  __controlChannelInAutoMode(3); //Check channel 3
+  __controlChannelInAutoModeByScheduleList(3); //Check channel 3
   //4. Check channel 4
-  __controlChannelInAutoMode(4); //Check channel 4
+  __controlChannelInAutoModeByScheduleList(4); //Check channel 4
 }
 
 void __updateScheduleToEEPROM(schedule_t schedule, uint8_t scheduleIndex=0){
@@ -442,6 +450,168 @@ void __processSyncScheduleABPacket(String syncScheduleData){
   }
 }
 
+
+//Controls a channel based on its mode (manual or auto) and returns the status of the channel.
+//If the channel is in MANUAL_MODE and the contactor status is CONTROL_OFF, the function sets the status to "MANUAL_OFF".
+//If the contactor status is CONTROL_ON, the status is set to "MANUAL_ON".
+//If the channel is in AUTO_MODE, the function calls __controlChannelInAutoModeByScheduleList(checkedChannel) to control the channel based on a schedule list.
+// + If the auto control status is CONTROL_OFF, the status is set to "AUTO_OFF".
+// + If the auto control status is CONTROL_ON, the status is set to "AUTO_ON".
+String __controlInAutoScheduleAndGetChannelStatus(uint8_t checkedChannel = 1){
+  String channelControlStatus = "";
+  if (dev.ch[checkedChannel].i_switchMode == MANUAL_MODE && dev.ch[checkedChannel].i_contactorStatus == CONTROL_OFF) {
+    channelControlStatus = "MANUAL_OFF";
+  }
+  else if (dev.ch[checkedChannel].i_switchMode == MANUAL_MODE && dev.ch[checkedChannel].i_contactorStatus == CONTROL_ON) {
+    channelControlStatus = "MANUAL_ON";
+  }
+  if (dev.ch[checkedChannel].i_switchMode == AUTO_MODE) {
+    __controlChannelInAutoModeByScheduleList(checkedChannel); //Check channel 1
+    if (dev.ch[checkedChannel].autoControl == CONTROL_OFF) {
+      channelControlStatus = "AUTO_OFF";
+    }
+    else if (dev.ch[checkedChannel].autoControl == CONTROL_ON) {
+      channelControlStatus = "AUTO_ON";
+    }
+  }
+  return channelControlStatus;
+}
+
+void __checkChannelSwitchAndSchedule(){
+  String channel1ControlStatus = __controlInAutoScheduleAndGetChannelStatus(1);
+  String channel2ControlStatus = __controlInAutoScheduleAndGetChannelStatus(2);
+  String channel3ControlStatus = __controlInAutoScheduleAndGetChannelStatus(3);
+  String channel4ControlStatus = __controlInAutoScheduleAndGetChannelStatus(4);
+  //Compare channel1ControlStatus with ch.lastControlStatus[1]. If they are different, update ch.lastControlStatus[1] and send to gateway
+  if (channel1ControlStatus != dev.ch[1].lastControlStatus) {
+    dev.ch[1].lastControlStatus = channel1ControlStatus;
+    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH1,"+channel1ControlStatus); //Send channel 1 status to Gateway
+  }
+  //Compare channel2ControlStatus with ch.lastControlStatus[2]. If they are different, update ch.lastControlStatus[2] and send to gateway
+  if (channel2ControlStatus != dev.ch[2].lastControlStatus) {
+    dev.ch[2].lastControlStatus = channel2ControlStatus;
+    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH2,"+channel2ControlStatus); //Send channel 2 status to Gateway
+  }
+  //Compare channel3ControlStatus with ch.lastControlStatus[3]. If they are different, update ch.lastControlStatus[3] and send to gateway
+  if (channel3ControlStatus != dev.ch[3].lastControlStatus) {
+    dev.ch[3].lastControlStatus = channel3ControlStatus;
+    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH3,"+channel3ControlStatus); //Send channel 3 status to Gateway
+  }
+  //Compare channel4ControlStatus with ch.lastControlStatus[4]. If they are different, update ch.lastControlStatus[4] and send to gateway
+  if (channel4ControlStatus != dev.ch[4].lastControlStatus) {
+    dev.ch[4].lastControlStatus = channel4ControlStatus;
+    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH4,"+channel4ControlStatus); //Send channel 4 status to Gateway
+  }
+}
+
+//Send internal status to gateway: temperature, humidity, rfConnStatus, Vout, Iout of all channels
+void __sendInternalStatus(){
+  //Send temperature, humidity to gateway
+  rfSendToGateway("C0","01,"+String(dev.boxTemp)+","+String(dev.boxHumi));
+  //Send rfConnStatus to gateway
+  rfSendToGateway("C0","08,"+String(dev.rfConnStatus));
+  //Send internal status to gateway of all channels from CH1 to CH4: CH1's Vout, CH1's Iout,....
+  rfSendToGateway("C0","10,"+String(dev.ch[1].Vout)+","+String(dev.ch[1].Iout)+String(dev.ch[2].Vout)+","+String(dev.ch[2].Iout)+String(dev.ch[3].Vout)+","+String(dev.ch[3].Iout)+String(dev.ch[4].Vout)+","+String(dev.ch[4].Iout));
+}
+
+
+void __sendWdtToSlave(){
+  rfSend("10","TASK1_OK");
+}
+
+
+void __SyncScheduleGatewayAndNode(){
+  // Chờ gói mới được gửi đến trong 120s.
+  // Nếu gói là AB thì kiểm tra in AB.
+  // Nếu gói là B0 thì kiểm tra in B0.
+  // Nếu hết thời gian mà không có gói đến thì thoát khỏi quá trình JOIN NETWORK (Sẽ thực hiện sau)
+  uint16_t waitTimeSec = 120; //Wait time in second
+  unsigned long waitTimeMark = millis(); //Wait time mark of 120s
+  reqSyncSID[100] = {0}; //Request sync SID list to gateway
+  reqSyncSIDIndex = 0; //Request sync SID list index
+  alreadySyncSID[100] = {0}; //Already sync SID list
+  alreadySyncSIDIndex = 0; //Already sync SID list index
+  bool scheduleSendFinishFlag = false; //Flag to indicate that schedule send finish or not (SCHEDULE_SEND_FINISH command)
+  while (millis() - waitTimeMark <= waitTimeSec*1000){
+    //Check Rx data
+    if (rxQueue.isEmpty() == false) {
+      String rData = rxQueue.dequeue();
+      int firstComma = rData.indexOf(',');
+      int secondComma = rData.indexOf(',', firstComma + 1);
+      int thirdComma = rData.indexOf(',', secondComma + 1);
+      String header = rData.substring(0, firstComma);
+      String gatewayID = rData.substring(firstComma + 1, secondComma);
+      String command = rData.substring(secondComma + 1, thirdComma);
+      String payload = rData.substring(thirdComma + 1);
+      // Serial.println("header: " + header);
+      // Serial.println("Gateway ID: " + gatewayID);
+      // Serial.println("Payload: " + payload);
+
+      //=====================================================
+      // A. GATEWAY ACTING: SEND SCHEDULE SID VER          //
+      //=====================================================
+      // A1. Gateway send list of Schedule ID and Schedule version to node
+      // Ex: AB,<GW_UID>,SCHEDULE_SID_VER,<SID_1>,<Sver_1>,<SID_2>,<Sver_2>,….
+      if (header == "AB" && command=="SCHEDULE_SID_VER") {
+        waitTimeMark = millis(); //Reset waitTimeMark of 120s
+        //a. Extract request sync SID and already sync SID from payload and store to reqSyncSID and alreadySyncSID
+        //payload = <SID_1:uint16_t>,<Sver_1:uint8_t>,<SID_2:uint16_t>,<Sver_2:uint8_t>,….
+        __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(payload);
+        //b. Send AB OK response to gateway
+        rfRespToGateway("AB","SCHEDULE_SID_VER,OK"); //Send response to Gateway
+      }
+      //==========================================================
+      // A2. Gateway inform node that it has sent all schedule to node
+      if (header == "AB" && command=="SCHEDULE_SEND_FINISH") {
+        waitTimeMark = millis(); //Reset waitTimeMark of 120s
+        //a. Set flag: scheduleSendFinishFlag = true
+        scheduleSendFinishFlag = true; //Set scheduleSendFinishFlag
+        //b. Send AB OK response to gateway
+        rfRespToGateway("AB","SCHEDULE_SEND_FINISH,OK"); //Send response to Gateway
+      }
+      //==========================================================
+      // A3. Gateway finish sending package to node. B0 is the last package.
+      if (header == "B0") {
+        waitTimeMark = millis(); //Reset waitTimeMark of 120s
+        //I. If scheduleSendFinishFlag == false, exit join network flow
+        if (scheduleSendFinishFlag == false) {
+          Serial.println("       => Node has not received schedule SID and Sver from gateway!");
+          Serial.println("       => Exit join network flow!");
+          return;
+        }
+        rfRespToGateway("B0","OK"); //Send response to Gateway
+
+        //=============================================================
+        // B. NODE ACTING: CHECKS SCHEDULE AND REQ_SCHEDULE TO SYNC  //
+        //=============================================================
+        // B1.Remove all schedule in scheduleList which does not exist in alreadySyncSID list and reqSyncSID list
+        __removeScheduleNotInList(alreadySyncSID, alreadySyncSIDIndex, reqSyncSID, reqSyncSIDIndex);
+
+        // B2. Send request sync schedule to gateway for each SID in reqSyncSID list
+        for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
+          if (reqSyncSID[i] != 0) {
+            //B2.1 Send AB "REQ_SCHEDULE" request to gateway
+            rfSendToGateway("AB","REQ_SCHEDULE,"+String(reqSyncSID[i])); //Send AB,REQ_SCHEDULE,<SID> to Gateway
+            //B2.2 Wait AB response from gateway
+            String syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",30); //Receive: AB,SEND_SCHEDULE,<SID>,<Sver>,<enableFlag>,<channel>,<repeatUntilFlag>,<repeatMode>,<weakdays>,<fromDate>,<fromTimeMin>,<toTimeMin>,<untilDate>
+            //B2.3 if syncScheduleData is not empty, update scheduleList
+            if (syncScheduleData != "") {
+              __processSyncScheduleABPacket(syncScheduleData); //Process sync schedule data
+              rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
+            } else {
+              break;
+            }
+          }
+          break;
+        }
+        // B3. Set joinReqDoneFlag = true
+        joinReqDoneFlag = true;
+      }
+    }
+  }
+}
+
+
 //////////////////////////
 //Button Handler        //
 //////////////////////////
@@ -485,7 +655,6 @@ class workingFlowClass {
     }
 
     void joinNetworkFlow(){
-      bool gotScheduleSidVerFlag = false; //Indicate if node has received schedule SID and Sver from gateway
       if (setupDoneFlag == true){
         __request_C2_A1_packet(); //Request C2 A1 packet
         //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
@@ -497,90 +666,126 @@ class workingFlowClass {
         //Nếu nhận được A1 thì tiếp tục quá trình JOIN NETWORK bằng việc chờ gói tin đồng bộ schedule cho đến khi nhận được gói B0.
 
         //=====================================================================================
-        // Chờ gói mới được gửi đến trong 120s.
-        // Nếu gói là AB thì kiểm tra in AB.
-        // Nếu gói là B0 thì kiểm tra in B0.
-        // Nếu hết thời gian mà không có gói đến thì thoát khỏi quá trình JOIN NETWORK (Sẽ thực hiện sau)
-        uint16_t waitTimeSec = 120; //Wait time in second
-        unsigned long waitTimeMark = millis(); //Wait time mark
-        reqSyncSID[100] = {0}; //Request sync SID list to gateway
-        reqSyncSIDIndex = 0; //Request sync SID list index
-        alreadySyncSID[100] = {0}; //Already sync SID list
-        alreadySyncSIDIndex = 0; //Already sync SID list index
-        while (millis() - waitTimeMark <= waitTimeSec*1000){
-          //Check Rx data
-          if (rxQueue.isEmpty() == false) {
-            String rData = rxQueue.dequeue();
-            int firstComma = rData.indexOf(',');
-            int secondComma = rData.indexOf(',', firstComma + 1);
-            int thirdComma = rData.indexOf(',', secondComma + 1);
-            String header = rData.substring(0, firstComma);
-            String gatewayID = rData.substring(firstComma + 1, secondComma);
-            String command = rData.substring(secondComma + 1, thirdComma);
-            String payload = rData.substring(thirdComma + 1);
-            // Serial.println("header: " + header);
-            // Serial.println("Gateway ID: " + gatewayID);
-            // Serial.println("Payload: " + payload);
-
-            //==========================================================
-            // 1. Gateway send list of Schedule ID and Schedule version to node
-            // Ex: AB,<GW_UID>,SCHEDULE_SID_VER,<SID_1>,<Sver_1>,<SID_2>,<Sver_2>,….
-            if (header == "AB" && command=="SCHEDULE_SID_VER") {
-              //payload = <SID_1:uint16_t>,<Sver_1:uint8_t>,<SID_2:uint16_t>,<Sver_2:uint8_t>,….
-              waitTimeMark = millis(); //Reset waitTimeMark
-              //1. Extract request sync SID and already sync SID from payload and store to reqSyncSID and alreadySyncSID
-              __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(payload);
-              //B. Send AB OK response to gateway
-              rfRespToGateway("AB","SCHEDULE_SID_VER,OK"); //Send response to Gateway
-              gotScheduleSidVerFlag = true; //Set gotScheduleSidVerFlag
-            }
-
-            //==========================================================
-            if (header == "B0") {
-              //I. If gotScheduleSidVerFlag == false, exit join network flow
-              if (gotScheduleSidVerFlag == false) {
-                Serial.println("       => Node has not received schedule SID and Sver from gateway!");
-                Serial.println("       => Exit join network flow!");
-                return;
-              }
-              // Remove all schedule in scheduleList which does not exist in alreadySyncSID list and reqSyncSID list
-              __removeScheduleNotInList(alreadySyncSID, alreadySyncSIDIndex, reqSyncSID, reqSyncSIDIndex);
-
-              waitTimeMark = millis(); //Reset waitTimeMark
-              rfRespToGateway("B0","OK"); //Send response to Gateway
-              //C. Send request sync schedule to gateway for each SID in reqSyncSID list
-              for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
-                if (reqSyncSID[i] != 0) {
-                  //C.1 Send AB "REQ_SCHEDULE" request to gateway
-                  rfSendToGateway("AB","REQ_SCHEDULE,"+String(reqSyncSID[i])); //Send AB,REQ_SCHEDULE,<SID> to Gateway
-                  //C.2 Wait AB response from gateway
-                  String syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",30); //Receive: AB,SEND_SCHEDULE,<SID>,<Sver>,<enableFlag>,<channel>,<repeatUntilFlag>,<repeatMode>,<weakdays>,<fromDate>,<fromTimeMin>,<toTimeMin>,<untilDate>
-                  //C.3 if syncScheduleData is not empty, update scheduleList
-                  if (syncScheduleData != "") {
-                    __processSyncScheduleABPacket(syncScheduleData); //Process sync schedule data
-                    rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
-                  } else {
-                    break;
-                  }
-                }
-                break;
-              }
-            }
-          }
-
-
-
-        }
-
-
-
-
+        __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
       }
     };
 
 
+    unsigned long updateStatusTimeMarkMs = millis(); //Update status time mark. Send status to gateway every SEND_STATUS_PERIOD_MS
+    unsigned long syncScheduleTimeMakMs = millis(); //Sync schedule time mark. Send sync schedule request to gateway every SYNC_SCHEDULE_PERIOD_MS
+    void normalWorkingFlow(){
+      while (true) {
+        //1. Check with SEND_STATUS_PERIOD_MS
+        if (millis() - updateStatusTimeMarkMs >= SEND_STATUS_PERIOD_MS){
+          updateStatusTimeMarkMs = millis(); //Reset updateStatusTimeMarkMs
+          if (joinReqDoneFlag == true){
+            __checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
+            __sendInternalStatus(); //Send internal status to gateway: temperature, humidity, rfConnStatus, Vout, Iout of all channels
+            __sendWdtToSlave(); //Send WDT to slave
+          }
+          else{
+            break; //Exit normal working flow -> join network flow again.
+          }
+        }
+        //2. Check with SYNC_SCHEDULE_PERIOD_MS
+        //Node send request sync schedule to gateway ưith command REQ_SYNC_SCHEDULE_SID_SVER
+        if (millis() - syncScheduleTimeMakMs >= SYNC_SCHEDULE_PERIOD_MS){
+          syncScheduleTimeMakMs = millis(); //Reset syncScheduleTimeMakMs
+          //Send AB "REQ_SCHEDULE_SID_VER" request to gateway
+          rfSendToGateway("AB","REQ_SCHEDULE_SID_VER"); //Send AB,REQ_SCHEDULE_SID_VER to Gateway
+          //Check Sync Schedule Gateway And Node
+          __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
+        }
+        //3. Nhận gói Schedule Configure từ gateway
+        if (rxQueue.isEmpty() == false) {
+          String rData = rxQueue.dequeue();
+          int firstComma = rData.indexOf(',');
+          int secondComma = rData.indexOf(',', firstComma + 1);
+          int thirdComma = rData.indexOf(',', secondComma + 1);
+          int fourthComma = rData.indexOf(',', thirdComma + 1);
+          String header = rData.substring(0, firstComma);
+          String gatewayID = rData.substring(firstComma + 1, secondComma);
+          String command = rData.substring(secondComma + 1, thirdComma);
+          String payload = rData.substring(thirdComma + 1, fourthComma);
+          // Serial.println("header: " + header);
+          // Serial.println("Gateway ID: " + gatewayID);
+          // Serial.println("Payload: " + payload);
+
+          //=====================================================
+          //3.1 Get SEND_SCHEDULE command from gateway
+          if (header == "AB" && command=="SEND_SCHEDULE") {
+            __processSyncScheduleABPacket(rData);
+            rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
+          }
+          //==========================================================
+          //3.2 Get SEND_SCHEDULE command from gateway
+          if (header == "AC" && command=="REMOTE_CONTROL") {
+            //Payload format: <channel: CH1/CH2/CH3/CH4>,<control: AUTO_ON/AUTO_OFF>
+            int commaIndex = payload.indexOf(',');
+            String channel = payload.substring(0, commaIndex);
+            String control = payload.substring(commaIndex + 1);
+            if (channel == "CH1" && dev.ch[1].i_switchMode == AUTO_MODE) {
+              if (control == "AUTO_ON") {
+                dev.ch[1].remoteControlFlag = true;
+                dev.ch[1].autoControl = CONTROL_ON;
+              }
+              else if (control == "AUTO_OFF") {
+                dev.ch[1].remoteControlFlag = true;
+                dev.ch[1].autoControl = CONTROL_OFF;
+              }
+            }
+            else if (channel == "CH2" && dev.ch[2].i_switchMode == AUTO_MODE) {
+              if (control == "AUTO_ON") {
+                dev.ch[2].remoteControlFlag = true;
+                dev.ch[2].autoControl = CONTROL_ON;
+              }
+              else if (control == "AUTO_OFF") {
+                dev.ch[2].remoteControlFlag = true;
+                dev.ch[2].autoControl = CONTROL_OFF;
+              }
+            }
+            else if (channel == "CH3" && dev.ch[3].i_switchMode == AUTO_MODE) {
+              if (control == "AUTO_ON") {
+                dev.ch[3].remoteControlFlag = true;
+                dev.ch[3].autoControl = CONTROL_ON;
+              }
+              else if (control == "AUTO_OFF") {
+                dev.ch[3].remoteControlFlag = true;
+                dev.ch[3].autoControl = CONTROL_OFF;
+              }
+            }
+            else if (channel == "CH4" && dev.ch[4].i_switchMode == AUTO_MODE) {
+              if (control == "AUTO_ON") {
+                dev.ch[4].remoteControlFlag = true;
+                dev.ch[4].autoControl = CONTROL_ON;
+              }
+              else if (control == "AUTO_OFF") {
+                dev.ch[4].remoteControlFlag = true;
+                dev.ch[4].autoControl = CONTROL_OFF;
+              }
+            }
+            //Delay to update status at channel
+            delay(1000);
+            rfRespToGateway("AC","REMOTE_CONTROL,OK"); //Send response to Gateway
+            __checkChannelSwitchAndSchedule(); //Node update status of channel to gateway
+          }
+        }
+      }
+    }
+
     
-    void loopFlow();
+
+    void mainFlow(){
+      joinNetworkFlow();
+      __checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
+      __sendInternalStatus(); //Send internal status to gateway
+      __sendWdtToSlave(); //Send WDT to slave
+      normalWorkingFlow(); //Loop forever if joinReqDoneFlag = true
+    }
+
+
+
+
     void wpsFlow();
 };
 //===========================================================================================================//

@@ -157,22 +157,22 @@ void remoteTerminalStatusInAutoMode(String payload){
   }
   //2. Set terminal status
   //2.a For channel 0
-  if (element[0] == "SET_TERMINAL" && element[1] == "CH0" && dev.ch[0].operMode == AUTO_MODE) {
+  if (element[0] == "SET_TERMINAL" && element[1] == "CH0" && dev.ch[0].i_switchMode == AUTO_MODE) {
     if (element[2] == "ON")  dev.ch[0].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
     if (element[2] == "OFF") dev.ch[0].autoControl = CONTROL_OFF; //Auto control: CONTROL_OFF
   }
   //2.b For channel 1
-  else if (element[0] == "SET_TERMINAL" && element[1] == "CH1" && dev.ch[1].operMode == AUTO_MODE) {
+  else if (element[0] == "SET_TERMINAL" && element[1] == "CH1" && dev.ch[1].i_switchMode == AUTO_MODE) {
     if (element[2] == "ON")  dev.ch[1].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
     if (element[2] == "OFF") dev.ch[1].autoControl = CONTROL_OFF; //Auto control: CONTROL_OFF
   }
   //2.c For channel 2
-  else if (element[0] == "SET_TERMINAL" && element[1] == "CH2" && dev.ch[2].operMode == AUTO_MODE) {
+  else if (element[0] == "SET_TERMINAL" && element[1] == "CH2" && dev.ch[2].i_switchMode == AUTO_MODE) {
     if (element[2] == "ON")  dev.ch[2].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
     if (element[2] == "OFF") dev.ch[2].autoControl = CONTROL_OFF; //Auto control: CONTROL_OFF
   }
   //2.d For channel 3
-  else if (element[0] == "SET_TERMINAL" && element[1] == "CH3" && dev.ch[3].operMode == AUTO_MODE) {
+  else if (element[0] == "SET_TERMINAL" && element[1] == "CH3" && dev.ch[3].i_switchMode == AUTO_MODE) {
     if (element[2] == "ON")  dev.ch[3].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
     if (element[2] == "OFF") dev.ch[3].autoControl = CONTROL_OFF; //Auto control: CONTROL_OFF
   }

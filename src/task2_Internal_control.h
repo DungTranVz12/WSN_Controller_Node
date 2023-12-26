@@ -23,7 +23,6 @@ void task2 () {
 
   //2. Update RTC timer every minute
   if (sendWdtCounter >= 600) {
-    rfSend("10","TASK1_OK");
     rfSend("10","TASK2_OK");
     sendWdtCounter = 0;
   }
@@ -61,29 +60,29 @@ void task2 () {
 
 
   //5. Cảnh báo nếu kênh đang được mở mà dòng bằng 0 hoặc áp bằng 0
-  // if (operStatusCh1 == 1 && (Vout1 == 0 || Iout1 == 0)) {
+  // if (i_contactorStatusCh1 == 1 && (Vout1 == 0 || Iout1 == 0)) {
   //   Serial.println("Channel 1 is opened but current or voltage is 0");
-  //   operStatusCh1 = 0;
-  //   EEPROM.write(ADDR_CH1_OPER_STS, operStatusCh1);
+  //   i_contactorStatusCh1 = 0;
+  //   EEPROM.write(ADDR_CH1_OPER_STS, i_contactorStatusCh1);
   // }
 
   //6. Nếu SW đang ở chế độ AUTO_MODE thì kiểm tra thời gian và thực hiện mở/đóng kênh
   /***
-  if (operModeCh1 == AUTO_MODE) {
+  if (i_switchModeCh1 == AUTO_MODE) {
     //Kiểm tra thời gian hiện tại có trùng với thời gian được lưu trong EEPROM hay không?
     if (rtcGetDatetime().hour == EEPROM.read(ADDR_CH1_SCHDLE_TIME[0]) && rtcGetDatetime().minute == EEPROM.read(ADDR_CH1_SCHDLE_TIME[1])) {
       //Nếu trùng thì thực hiện mở/đóng kênh
-      if (operStatusCh1 == 0) {
+      if (i_contactorStatusCh1 == 0) {
         //Nếu kênh đang đóng thì mở kênh
         digitalWrite(O_RELAY_1_LEVEL, HIGH);
-        operStatusCh1 = 1;
-        EEPROM.write(ADDR_CH1_OPER_STS, operStatusCh1);
+        i_contactorStatusCh1 = 1;
+        EEPROM.write(ADDR_CH1_OPER_STS, i_contactorStatusCh1);
       }
       else {
         //Nếu kênh đang mở thì đóng kênh
         digitalWrite(O_RELAY_1_LEVEL, LOW);
-        operStatusCh1 = 0;
-        EEPROM.write(ADDR_CH1_OPER_STS, operStatusCh1);
+        i_contactorStatusCh1 = 0;
+        EEPROM.write(ADDR_CH1_OPER_STS, i_contactorStatusCh1);
       }
     }
   }

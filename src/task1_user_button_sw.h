@@ -32,16 +32,16 @@ void task1 () {
     digitalWrite(TFL_BACKLIGHT, LCD_OFF);     //Turn OFF LCD backlight
   }
   //2. Read mode switch status and update switch status
-  dev.ch[1].operMode = digitalRead(I_SW_CH1); //1: AUTO, 0: MANUAL
-  dev.ch[2].operMode = digitalRead(I_SW_CH2); //1: AUTO, 0: MANUAL
-  dev.ch[3].operMode = digitalRead(I_SW_CH3); //1: AUTO, 0: MANUAL
-  dev.ch[4].operMode = digitalRead(I_SW_CH4); //1: AUTO, 0: MANUAL
+  dev.ch[1].i_switchMode = digitalRead(I_SW_CH1); //1: AUTO, 0: MANUAL
+  dev.ch[2].i_switchMode = digitalRead(I_SW_CH2); //1: AUTO, 0: MANUAL
+  dev.ch[3].i_switchMode = digitalRead(I_SW_CH3); //1: AUTO, 0: MANUAL
+  dev.ch[4].i_switchMode = digitalRead(I_SW_CH4); //1: AUTO, 0: MANUAL
 
   //3. Read relay status and update relay status and 1 is OFF, 0 is ON
-  dev.ch[1].operStatus = 1-digitalRead(I_RL_CH1); //0: OFF, 1: ON
-  dev.ch[2].operStatus = 1-digitalRead(I_RL_CH2); //0: OFF, 1: ON
-  dev.ch[3].operStatus = 1-digitalRead(I_RL_CH3); //0: OFF, 1: ON
-  dev.ch[4].operStatus = 1-digitalRead(I_RL_CH4); //0: OFF, 1: ON
+  dev.ch[1].i_contactorStatus = 1-digitalRead(I_RL_CH1); //0: OFF, 1: ON
+  dev.ch[2].i_contactorStatus = 1-digitalRead(I_RL_CH2); //0: OFF, 1: ON
+  dev.ch[3].i_contactorStatus = 1-digitalRead(I_RL_CH3); //0: OFF, 1: ON
+  dev.ch[4].i_contactorStatus = 1-digitalRead(I_RL_CH4); //0: OFF, 1: ON
 
   delay(10);
 }

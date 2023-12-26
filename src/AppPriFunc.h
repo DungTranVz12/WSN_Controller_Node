@@ -17,10 +17,12 @@ struct channelInfo {
   float Iout = 0; //Current of each channel.
   uint16_t listVolt[40] = {0}; //List of latest 20 values of voltage of each channel.
   uint8_t  listVoltIndex = 0; //Index of listVolt array.
-  uint8_t operStatus = CONTROL_OFF; //0: OFF, 1: ON
-  uint8_t autoControl = CONTROL_OFF; //0: OFF, 1: ON
-  uint8_t operMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE
+  uint8_t i_contactorStatus = OFF_STATUS; //0: OFF, 1: ON. Directly read from relay/Contactor.
+  bool    remoteControlFlag = false; //Khi nhận được yêu cầu remote control trong chế độ AUTO MODE thì cờ này bật lên và chiếm quyền Schedule.  
+  uint8_t autoControl = CONTROL_OFF; //0: OFF, 1: ON. Control in AUTO MODE bởi schedule hoặc remote control.
+  uint8_t i_switchMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE. Directly read from switch.
   bool    inScheduleFlag = false; //0: Not in schedule, 1: In schedule
+  String  lastControlStatus = ""; //Last control status: MANUAL_ON, MANUAL_OFF, AUTO_ON, AUTO_OFF
   uint32_t scheduleOper[20][2]; //Schedule operation time of each channel.
 };
 
@@ -192,7 +194,7 @@ void pwmControlCheck () {
   if (dev.firstLoadMem == 0) return; //If memory is not loaded at the first time => return.
 
   //Channel 1
-  if (dev.ch[1].operMode == AUTO_MODE) {
+  if (dev.ch[1].i_switchMode == AUTO_MODE) {
     if (dev.ch[1].autoControl == CONTROL_ON) {
       digitalWrite(O_RELAY_1_LEVEL, HIGH);
       pwmStateCh1 = !pwmStateCh1;
@@ -206,7 +208,7 @@ void pwmControlCheck () {
     digitalWrite(O_RELAY_1_LEVEL, LOW);
   }
   //Channel 2
-  if (dev.ch[2].operMode == AUTO_MODE) {
+  if (dev.ch[2].i_switchMode == AUTO_MODE) {
     if (dev.ch[2].autoControl == CONTROL_ON) {
       digitalWrite(O_RELAY_2_LEVEL, HIGH);
       pwmStateCh2 = !pwmStateCh2;
@@ -220,7 +222,7 @@ void pwmControlCheck () {
     digitalWrite(O_RELAY_2_LEVEL, LOW);
   }
   //Channel 3
-  if (dev.ch[3].operMode == AUTO_MODE) {
+  if (dev.ch[3].i_switchMode == AUTO_MODE) {
     if (dev.ch[3].autoControl == CONTROL_ON) {
       digitalWrite(O_RELAY_3_LEVEL, HIGH);
       pwmStateCh3 = !pwmStateCh3;
@@ -234,7 +236,7 @@ void pwmControlCheck () {
     digitalWrite(O_RELAY_3_LEVEL, LOW);
   }
   //Channel 4
-  if (dev.ch[4].operMode == AUTO_MODE) {
+  if (dev.ch[4].i_switchMode == AUTO_MODE) {
     if (dev.ch[4].autoControl == CONTROL_ON) {
       digitalWrite(O_RELAY_4_LEVEL, HIGH);
       pwmStateCh4 = !pwmStateCh4;

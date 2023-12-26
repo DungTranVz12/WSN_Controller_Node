@@ -8,12 +8,12 @@
 #include "task4_rf_com.h"
 #include "AppFunc.h"
 
-TaskHandle_t xTaskHandle_1;
+
 TaskHandle_t xTaskHandle_2;
 TaskHandle_t xTaskHandle_3;
 TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
-workingFlowClass workingFlow;
+//workingFlowClass workingFlow;
 
 void debugPrint(){
   Serial.println("=== DEBUG ===");
@@ -79,7 +79,7 @@ void controllerInit(void){
   Timer1.attachInterrupt(pwmControlCheck); // attaches callback: pwmControlCheck as a timer overflow interrupt
 
   //2. Load config from EEPROM
-  // operStatusCh1 = EEPROM.read();
+  // i_contactorStatusCh1 = EEPROM.read();
 
   //3. Initialize RTC
   rtcInit(); //Initialize RTC
@@ -108,45 +108,17 @@ void setup() {
   Serial.print("Unique ID: ");
   Serial.println(UIDstr);
 
-
-  // //3. Test send some message to Slave
-  // unsigned long lastMillis = millis(); //Initialize lastMillis
-  // uint8_t messageNum = 1; //Initialize messageNum
-  // while (true) {
-  //   unsigned long delta = millis() - lastMillis;
-  //   if (delta >= 1000 && messageNum == 1) {
-  //     Serial.println("10,"+UIDstr+",04,TASK1_OK"); //Send message to Slave
-  //     messageNum++;
-  //   }
-  //   if (delta >= 5000 && messageNum == 2) {
-  //     Serial.println("10,"+UIDstr+",04,TASK2_OK"); //Send message to Slave 
-  //     messageNum++;
-  //   }
-
-  //   if (delta >= 10000 && messageNum == 3) {
-  //     Serial.println("A6,"+UIDstr+",04,START_WPS_MODE"); //Send message to Slave
-  //     messageNum++;
-  //   }
-
-  //   //Clear messageNum and reset lastMillis
-  //   String rxData = rfRxCheck();
-  //   if (rxData != "") {
-  //     Serial.println("RF Received: " + rxData);
-  //   }
-  // }
-
-
-  workingFlow.setupFlow();
+  //workingFlow.setupFlow();
   Serial.println("\n=== START ALL TASKS ===");
   allTaskDeclare ();
   Serial.println("\n=== END SETUP ===");
   setupDoneFlag = true;
 
-
   // rfSendToGateway("A6","START_WPS_MODE"); //<--------------------- DEBUG
 }
 
 void loop() {
+  Serial.println("=== LOOP ===");
   task1 (); //Check button & SW
   //TEST
   dev.firstLoadMem = 1; //First load memory <--------------------- DEBUG
@@ -182,21 +154,21 @@ void allTaskDeclare (){
  xTaskCreate(
                  multask2,              /* Function to implement the task */
                  "Voltage & Current Monitoring", /* Name of the task *///                  
-                 512,                   /* Stack size in words */
+                 256,                   /* Stack size in words */
                  NULL,                  /* Task input parameter */
                  10,                    /* Priority of the task */
                  &xTaskHandle_2);       /* Task handle. */
  xTaskCreate(
                  multask3,              /* Function to implement the task */
                  "display",             /* Name of the task */
-                 512,                   /* Stack size in words */
+                 256,                   /* Stack size in words */
                  NULL,                  /* Task input parameter */
                  10,                    /* Priority of the task */                                    
                  &xTaskHandle_3);       /* Task handle. */
  xTaskCreate(
                  multask4,              /* Function to implement the task */
                  "RF communication",    /* Name of the task */
-                 512,                   /* Stack size in words */
+                 256,                   /* Stack size in words */
                  NULL,                  /* Task input parameter */
                  10,                     /* Priority of the task */
                  &xTaskHandle_4);       /* Task handle. */

@@ -11,6 +11,9 @@ bool joinRequestSent = false; //Flag to check if join request has been sent
 unsigned long lastJoinRequestTime = millis() - 60000; //Last time join request was sent
 bool setupDoneFlag = false; //Flag to check if setup process is done
 bool receivedA1Flag = false; //Reset receivedA1Flag
+bool joinReqDoneFlag = false; //Join request done flag
+#define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
+#define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
 
  
 //*************Define GPIO*************
@@ -65,6 +68,8 @@ bool receivedA1Flag = false; //Reset receivedA1Flag
 #define AUTO_MODE        1
 #define CONTROL_ON       1
 #define CONTROL_OFF      0
+#define ON_STATUS        1
+#define OFF_STATUS       0
 
 //***************************************
 #define TFT_DC        49
