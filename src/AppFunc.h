@@ -8,12 +8,12 @@
 #define EEPROM_ADDR_INIT     0 //EEPROM address to store init code
 
 #define EEPROM_ADDR_SCHEDULE 100 //EEPROM address to store schedule
-#define EEPROM_SCHEDULE_MAX  100 //EEPROM address to store schedule
+#define EEPROM_SCHEDULE_MAX  40  //EEPROM address to store schedule
 #define EEPROM_SCHEDULE_SIZE 15  //EEPROM address to store schedule
 
-uint16_t reqSyncSID[100] = {0}; //Request sync SID list to gateway
+uint16_t reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
 uint8_t  reqSyncSIDIndex = 0; //Request sync SID list index
-uint16_t alreadySyncSID[100] = {0}; //Already sync SID list
+uint16_t alreadySyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Already sync SID list
 uint8_t  alreadySyncSIDIndex = 0; //Already sync SID list index
 
 
@@ -50,7 +50,6 @@ struct schedule_t {
   uint8_t untilMonth = 0; //Until month
   uint8_t untilYear = 0; //Until year. 0 mean 2000 year.
 };
-
 schedule_t* scheduleList = new schedule_t[EEPROM_SCHEDULE_MAX];
 
 void checkInitEEPROM(){
@@ -527,9 +526,9 @@ void __SyncScheduleGatewayAndNode(){
   // Nếu hết thời gian mà không có gói đến thì thoát khỏi quá trình JOIN NETWORK (Sẽ thực hiện sau)
   uint16_t waitTimeSec = 120; //Wait time in second
   unsigned long waitTimeMark = millis(); //Wait time mark of 120s
-  reqSyncSID[100] = {0}; //Request sync SID list to gateway
+  reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
   reqSyncSIDIndex = 0; //Request sync SID list index
-  alreadySyncSID[100] = {0}; //Already sync SID list
+  alreadySyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Already sync SID list
   alreadySyncSIDIndex = 0; //Already sync SID list index
   bool scheduleSendFinishFlag = false; //Flag to indicate that schedule send finish or not (SCHEDULE_SEND_FINISH command)
   while (millis() - waitTimeMark <= waitTimeSec*1000){

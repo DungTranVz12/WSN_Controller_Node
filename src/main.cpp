@@ -138,7 +138,7 @@ void loop() {
 // void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
 void multask2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
 void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(1000/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(10/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(1000/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(50/portTICK_PERIOD_MS);}}
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
