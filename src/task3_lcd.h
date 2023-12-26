@@ -432,6 +432,12 @@ lcdScreen lcd = lcdScreen();
 
 
 void task3 (){
-  lcd.updateScreen(); //Update screen
-  lcd.updateSecColon();
+  if (dev.doorStatus == 1){
+    digitalWrite(TFL_BACKLIGHT, LCD_ON); //Turn off LCD backlight
+    lcd.updateScreen(); //Update screen
+    lcd.updateSecColon();
+  }
+  else{
+    digitalWrite(TFL_BACKLIGHT, LCD_OFF); //Turn off LCD backlight
+  }
 }

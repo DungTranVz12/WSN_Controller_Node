@@ -22,14 +22,14 @@ void task1 () {
   // 1.  Read button status and update button status
   if (DOOR_INSTALLED == 1 && dev.V_Door >= 1) {
     buttonScan();               //Scan button status and update button status
-    digitalWrite(TFL_BACKLIGHT, LCD_ON);     //Turn on LCD backlight
+    dev.doorStatus = 1; //Door is opened
   }
   else if (DOOR_INSTALLED == 0){
     buttonScan();              //Scan button status and update button status
-    digitalWrite(TFL_BACKLIGHT, LCD_ON);     //Turn OFF LCD backlight
+    dev.doorStatus = 1; //Door is closed
   }
   else {
-    digitalWrite(TFL_BACKLIGHT, LCD_OFF);     //Turn OFF LCD backlight
+    dev.doorStatus = 0; //Door is closed
   }
   //2. Read mode switch status and update switch status
   dev.ch[1].i_switchMode = digitalRead(I_SW_CH1); //1: AUTO, 0: MANUAL

@@ -20,7 +20,7 @@ void rfSendLog(String logStr){
  * @param cmdResp The command response string. Default value is "C2".
  * @param payload The payload string. Default value is an empty string.
  */
-void rfSendToGateway(String cmdResp="C2", String payload=""){
+void rfSendToGateway(String cmdResp, String payload){
   String tData = cmdResp+","+UIDstr+","+nodeType+","+payload;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
@@ -59,7 +59,7 @@ void rfRxCheck()
   }
 }
 
-String waitCommandWithString(String header="A1", String str ="", uint16_t timeOutSec = 30){
+String waitCommandWithString(String header, String str, uint16_t timeOutSec){
   uint16_t timeOutCounter = 0;
   while (1) {
     rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
@@ -74,9 +74,9 @@ String waitCommandWithString(String header="A1", String str ="", uint16_t timeOu
       String header = rData.substring(0, firstComma);
       String gatewayID = rData.substring(firstComma + 1, secondComma);
       String payload = rData.substring(secondComma + 1);
-      Serial.println("header: " + header);
-      Serial.println("Gateway ID: " + gatewayID);
-      Serial.println("Payload: " + payload);
+      // Serial.println("header: " + header);
+      // Serial.println("Gateway ID: " + gatewayID);
+      // Serial.println("Payload: " + payload);
       //Check if header = header and str in payload
       if (header == header && payload.indexOf(str) >= 0) {
         return rData;
@@ -101,7 +101,7 @@ String waitCommandWithString(String header="A1", String str ="", uint16_t timeOu
  * @param cmdResp The command response string. Default is "A1".
  * @param statusResp The status response string: OK/FAIL. Default is "OK".
  */
-void rfRespToGateway(String cmdResp="A1", String statusResp="OK"){
+void rfRespToGateway(String cmdResp, String statusResp){
   String tData = "C4,"+UIDstr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
@@ -185,60 +185,63 @@ void remoteTerminalStatusInAutoMode(String payload){
 //=============================================================================================
 //=============================================================================================
 void task4 (){
-  //0. Check and send join request at the first time
-  // This code checks if a join request has been sent and if enough time has passed since the last join request. 
-  // If the conditions are met, it sends a join request to the Gateway and resets the lastJoinRequestTime.
-  if (joinRequestSent == false && millis() - lastJoinRequestTime >= 60000) {
-    rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
-    lastJoinRequestTime = millis(); //Reset lastJoinRequestTime
-  }
+  // //0. Check and send join request at the first time
+  // // This code checks if a join request has been sent and if enough time has passed since the last join request. 
+  // // If the conditions are met, it sends a join request to the Gateway and resets the lastJoinRequestTime.
+  // if (joinRequestSent == false && millis() - lastJoinRequestTime >= 60000) {
+  //   rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
+  //   lastJoinRequestTime = millis(); //Reset lastJoinRequestTime
+  // }
+  // //1. RX check and process
+  // rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
+  // if (rxQueue.isEmpty() == false) {
+  //   String rData = rxQueue.dequeue();
+  //   //Decode rData:
+  //   //+ First data before ',' is the command
+  //   //+ Second data after ',' is the Gateway ID
+  //   //+ Ramaining data is the payload
+  //   int firstComma = rData.indexOf(',');
+  //   int secondComma = rData.indexOf(',', firstComma + 1);
+  //   String command = rData.substring(0, firstComma);
+  //   String gatewayID = rData.substring(firstComma + 1, secondComma);
+  //   String payload = rData.substring(secondComma + 1);
+  //   // Serial.println("Command: " + command);
+  //   // Serial.println("Gateway ID: " + gatewayID);
+  //   // Serial.println("Payload: " + payload);
+
+  //   //###########################//
+  //   //Process command            //
+  //   //###########################//
+  //   //Packet A1: Synchronization time
+  //   //Rx Data:   A1,<GW_UID>,<hh>,<mm>,<ss>,<dd>,<mm>,<yyyy>
+  //   if (command == "A1") {
+  //     joinRequestSent = true; //Set joinRequestSent flag
+  //     updateSyncTime(rData); //Update sync time
+  //     rfRespToGateway("A1","OK"); //Send response to Gateway
+  //   }
+    
+  //   //Packet AC: Set terminal status
+  //   //Rx Data:   AC,<GW_UID>,"SET_TERMINAL",<CH0-3>,<ON/OFF>
+  //   if (command == "AC") {
+  //     remoteTerminalStatusInAutoMode(payload); //Remote terminal status in AUTO mode
+  //     rfRespToGateway("AC","OK"); //Send response to Gateway
+  //   }
+
+
+
+
+
+
+  //   //Packet B0: Finshed setting up
+  //   if (command == "B0") {
+  //     rfRespToGateway("B0","OK"); //Send response to Gateway
+  //   }
+
+
+  // }
+
   //1. RX check and process
   rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
-  if (rxQueue.isEmpty() == false) {
-    String rData = rxQueue.dequeue();
-    //Decode rData:
-    //+ First data before ',' is the command
-    //+ Second data after ',' is the Gateway ID
-    //+ Ramaining data is the payload
-    int firstComma = rData.indexOf(',');
-    int secondComma = rData.indexOf(',', firstComma + 1);
-    String command = rData.substring(0, firstComma);
-    String gatewayID = rData.substring(firstComma + 1, secondComma);
-    String payload = rData.substring(secondComma + 1);
-    // Serial.println("Command: " + command);
-    // Serial.println("Gateway ID: " + gatewayID);
-    // Serial.println("Payload: " + payload);
-
-    //###########################//
-    //Process command            //
-    //###########################//
-    //Packet A1: Synchronization time
-    //Rx Data:   A1,<GW_UID>,<hh>,<mm>,<ss>,<dd>,<mm>,<yyyy>
-    if (command == "A1") {
-      joinRequestSent = true; //Set joinRequestSent flag
-      updateSyncTime(rData); //Update sync time
-      rfRespToGateway("A1","OK"); //Send response to Gateway
-    }
-    
-    //Packet AC: Set terminal status
-    //Rx Data:   AC,<GW_UID>,"SET_TERMINAL",<CH0-3>,<ON/OFF>
-    if (command == "AC") {
-      remoteTerminalStatusInAutoMode(payload); //Remote terminal status in AUTO mode
-      rfRespToGateway("AC","OK"); //Send response to Gateway
-    }
-
-
-
-
-
-
-    //Packet B0: Finshed setting up
-    if (command == "B0") {
-      rfRespToGateway("B0","OK"); //Send response to Gateway
-    }
-
-
-  }
 
   //2. TX check and process
   if (txQueue.isEmpty() == false && digitalRead(I_Slave_RDY) == HIGH) {

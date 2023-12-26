@@ -187,6 +187,7 @@ bool __checkDateMatch(schedule_t schedule){
       }
       break;
   }
+  return false;
 }
 
 
@@ -299,7 +300,7 @@ void __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(String pay
     //2. Check if SID is in scheduleList
     if (SID != 0){ //SID = 0 is not used
       for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
-        if (scheduleList[i].enableFlag && scheduleList[i].SID == SID) {
+        if (scheduleList[i].enableFlag && scheduleList[i].SID == uint16_t(SID)) {
           //3. If SID is in scheduleList, check Sver
           if (scheduleList[i].SVer != Sver) {
             //4. If Sver is not match, add SID to reqSyncSID list
@@ -476,11 +477,27 @@ String __controlInAutoScheduleAndGetChannelStatus(uint8_t checkedChannel = 1){
   return channelControlStatus;
 }
 
+int __convertStringControlStatusToInt(String channelControlStatus){
+  if (channelControlStatus == "MANUAL_OFF") return 1;
+  if (channelControlStatus == "MANUAL_ON") return 2;
+  if (channelControlStatus == "AUTO_OFF") return 3;
+  if (channelControlStatus == "AUTO_ON") return 4;
+  return 0;
+}
+
 void __checkChannelSwitchAndSchedule(){
-  String channel1ControlStatus = __controlInAutoScheduleAndGetChannelStatus(1);
-  String channel2ControlStatus = __controlInAutoScheduleAndGetChannelStatus(2);
-  String channel3ControlStatus = __controlInAutoScheduleAndGetChannelStatus(3);
-  String channel4ControlStatus = __controlInAutoScheduleAndGetChannelStatus(4);
+  String controlStatus = "";
+  uint8_t channel1ControlStatus, channel2ControlStatus, channel3ControlStatus, channel4ControlStatus;
+
+  controlStatus = __controlInAutoScheduleAndGetChannelStatus(1);
+  channel1ControlStatus = __convertStringControlStatusToInt(controlStatus);
+  controlStatus = __controlInAutoScheduleAndGetChannelStatus(2);
+  channel2ControlStatus = __convertStringControlStatusToInt(controlStatus);
+  controlStatus = __controlInAutoScheduleAndGetChannelStatus(3);
+  channel3ControlStatus = __convertStringControlStatusToInt(controlStatus);
+  controlStatus = __controlInAutoScheduleAndGetChannelStatus(4);
+  channel4ControlStatus = __convertStringControlStatusToInt(controlStatus);
+
   //Compare channel1ControlStatus with ch.lastControlStatus[1]. If they are different, update ch.lastControlStatus[1] and send to gateway
   if (channel1ControlStatus != dev.ch[1].lastControlStatus) {
     dev.ch[1].lastControlStatus = channel1ControlStatus;

@@ -15,14 +15,16 @@ SHT2x sht;
 struct channelInfo {
   float Vout = 0; //Voltage of each channel.
   float Iout = 0; //Current of each channel.
-  uint16_t listVolt[40] = {0}; //List of latest 20 values of voltage of each channel.
+  uint16_t listVolt[20] = {0}; //List of latest 20 values of voltage of each channel.
   uint8_t  listVoltIndex = 0; //Index of listVolt array.
+  uint16_t listCurrent[20] = {0}; //List of latest 20 values of current of each channel.
+  uint8_t  listCurrentIndex = 0; //Index of listCurrent array.
   uint8_t i_contactorStatus = OFF_STATUS; //0: OFF, 1: ON. Directly read from relay/Contactor.
   bool    remoteControlFlag = false; //Khi nhận được yêu cầu remote control trong chế độ AUTO MODE thì cờ này bật lên và chiếm quyền Schedule.  
   uint8_t autoControl = CONTROL_OFF; //0: OFF, 1: ON. Control in AUTO MODE bởi schedule hoặc remote control.
   uint8_t i_switchMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE. Directly read from switch.
   bool    inScheduleFlag = false; //0: Not in schedule, 1: In schedule
-  String  lastControlStatus = ""; //Last control status: MANUAL_ON, MANUAL_OFF, AUTO_ON, AUTO_OFF
+  uint8_t  lastControlStatus = 0; //0: Unknow, 1: MANUAL_OFF, 2: MANUAL_ON, 3: AUTO_OFF, 4: AUTO_ON
   uint32_t scheduleOper[20][2]; //Schedule operation time of each channel.
 };
 
@@ -163,7 +165,7 @@ void buttonScan(){
  */
 void findMaxVoltage(uint8_t chNum){
   uint16_t maxValue = 0;
-  uint8_t  sampleNum = 40;
+  uint8_t  sampleNum = 20;
   double VmaxD=0;
   double VeffD;
   double Veff;
@@ -183,6 +185,30 @@ void findMaxVoltage(uint8_t chNum){
   Voutput = Veff*222.0/70.0;
   if (Voutput < 0) Voutput = 0;
   dev.ch[chNum].Vout = int(Voutput);
+}
+
+void findMaxCurrent(uint8_t chNum){
+  uint16_t maxValue = 0;
+  uint8_t  sampleNum = 20;
+  double ImaxD=0;
+  double IeffD;
+  double Ieff;
+  double Ioutput;
+
+  //Find max value
+  for (int i = 0; i < sampleNum; i++)
+  {
+    if (dev.ch[chNum].listCurrent[i] > maxValue)
+    {
+      maxValue = dev.ch[chNum].listCurrent[i];
+    }
+  }
+  ImaxD=maxValue;
+  IeffD=ImaxD/sqrt(2);
+  Ieff=(((IeffD-420.76)/-90.24)*-210.2)+210.2;
+  Ioutput = Ieff*222.0/70.0;
+  if (Ioutput < 0) Ioutput = 0;
+  dev.ch[chNum].Iout = int(Ioutput);
 }
 
 void pwmControlCheck () {

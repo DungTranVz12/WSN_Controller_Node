@@ -26,7 +26,7 @@ void debugPrint(){
   Serial.print("CH1_Vmax      : ");Serial.print(dev.ch[1].Vout,1);Serial.println("V");
   // Print dev.ch[1].listVolt in array
   Serial.print("CH1_Vmax_list : ");
-  for (int i = 0; i < 40; i++)
+  for (int i = 0; i < 20; i++)
   {
     Serial.print(dev.ch[1].listVolt[i]);
     Serial.print(" ");
@@ -73,7 +73,7 @@ void controllerInit(void){
   digitalWrite(O_LED_BAT , LOW );    //Turn on LED BAT
   digitalWrite(O_LED_SLA , HIGH);    //Turn off LED SLA
   digitalWrite(O_LED_PWR , LOW );    //Turn on LED PWR
-  digitalWrite(TFL_BACKLIGHT, HIGH); //Turn on LCD backlight
+  digitalWrite(TFL_BACKLIGHT, LOW); //Turn off LCD backlight
 
   Timer1.initialize(1000);                 // initialize timer1, and set a 1 millisec period
   Timer1.attachInterrupt(pwmControlCheck); // attaches callback: pwmControlCheck as a timer overflow interrupt
@@ -103,7 +103,7 @@ void setup() {
   controllerInit(); //Initialize controller
 
   //2. print 6 bytes of UniqueID
-  sprintf(UID, "%02X%02X%02X%02X%02X%02X", UniqueID[0], UniqueID[1], UniqueID[2]);
+  sprintf(UID, "%02X%02X%02X%02X%02X%02X", (unsigned int)UniqueID[0], (unsigned int)UniqueID[1], (unsigned int)UniqueID[2]);
   UIDstr = String(UID[0]) + String(UID[1]) + String(UID[2]) + String(UID[3]) + String(UID[4]) + String(UID[5]);
   Serial.print("Unique ID: ");
   Serial.println(UIDstr);
@@ -118,7 +118,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("=== LOOP ===");
+  // Serial.println("=== LOOP ===");
   task1 (); //Check button & SW
   //TEST
   dev.firstLoadMem = 1; //First load memory <--------------------- DEBUG
@@ -136,9 +136,9 @@ void loop() {
 /////////////////////////////////
 //define task handles
 // void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
-void multask2 (void * pvParameters) {vTaskDelay(25/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
-void multask3 (void * pvParameters) {vTaskDelay(45/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(1000/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(50/portTICK_PERIOD_MS);}}
+void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
+void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(100/portTICK_PERIOD_MS);}}
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////

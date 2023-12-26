@@ -1,17 +1,18 @@
 #ifndef APPFUNC
 #include "appfunc.h"
 #endif
+uint8_t findMaxVoltageDone = 0; //Flag to check if findMaxVoltage function is done or not
 
 // Run every 100ms
 void task2 () {
   // Serial.println("=== TASK 2 ===");
   static uint16_t sht21TimeCounter = 0;   //Counter for SHT21 timer
   static uint16_t rtcTimeCounter = 0;     //Counter for RTC timer
-  static uint16_t findMaxVoltCounter = 0; //Counter for findMaxVoltage function
+  static uint16_t findMaxVoltCurrentCounter = 0; //Counter for findMaxVoltage function and findMaxCurrent
   static uint16_t sendWdtCounter = 0;     //Counter for WDT timer
   sht21TimeCounter++;
   rtcTimeCounter++;
-  findMaxVoltCounter++;
+  findMaxVoltCurrentCounter++;
   sendWdtCounter++;
   dev.rfStatusCounter++; //Counter for RF status
   
@@ -48,15 +49,30 @@ void task2 () {
   dev.ch[3].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH3);
   dev.ch[4].listVolt[dev.ch[1].listVoltIndex] = analogRead(I_Vmon_CH4);
   dev.ch[1].listVoltIndex++; if (dev.ch[1].listVoltIndex >= 40) dev.ch[1].listVoltIndex = 0;
-  //4.2 Find max voltage of all channels
-  if (findMaxVoltCounter >= 10) {
+  //4.2 Find max voltage and current of all channels
+  uint8_t MAX_VALUE;
+  if (dev.doorStatus == 1) { //Door is opened
+    MAX_VALUE = 10; //Khi cửa mở. Giây đầu tìm áp lớn nhất. Giây sau tìm dòng lớn nhất.
+  }
+  else { //Door is closed
+    MAX_VALUE = 50; //Khi cửa đóng. Giây thứ 5 tìm áp lớn nhất. Giây thứ 10 tìm dòng lớn nhất.
+  }
+  if (findMaxVoltCurrentCounter >= MAX_VALUE && findMaxVoltageDone == 0) {
     findMaxVoltage(1); //Find max voltage of channel 1
     findMaxVoltage(2); //Find max voltage of channel 2
     findMaxVoltage(3); //Find max voltage of channel 3
     findMaxVoltage(4); //Find max voltage of channel 4
-    findMaxVoltCounter = 0;
+    findMaxVoltageDone = 1; //Set flag to 1
   }
-  //4.3 voltCurrMonUpdate();
+  if (findMaxVoltCurrentCounter >= 2*MAX_VALUE) {
+    findMaxCurrent(1); //Find max current of channel 1
+    findMaxCurrent(2); //Find max current of channel 2
+    findMaxCurrent(3); //Find max current of channel 3
+    findMaxCurrent(4); //Find max current of channel 4
+    findMaxVoltageDone = 0; //Set flag to 1
+    findMaxVoltCurrentCounter = 0; //Reset counter
+  }
+  
 
 
   //5. Cảnh báo nếu kênh đang được mở mà dòng bằng 0 hoặc áp bằng 0
