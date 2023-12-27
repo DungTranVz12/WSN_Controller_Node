@@ -15,6 +15,7 @@ bool joinReqDoneFlag = false; //Join request done flag
 #define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
 #define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
 #define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
+String rfRxData = ""; // Data received from serial port
 
 // #define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
 // #define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
@@ -97,5 +98,17 @@ bool joinReqDoneFlag = false; //Join request done flag
 // #define ADDR_CH3_OPER_STS 2
 // #define ADDR_CH4_OPER_STS 3
 
+#define LED_DEBUG1  digitalWrite(O_LED_4G  , LOW);
+#define LED_DEBUG2  digitalWrite(O_LED_RF  , LOW);
+#define LED_DEBUG3  digitalWrite(O_LED_WIFI, LOW);
+#define LED_DEBUG4  digitalWrite(O_LED_BAT , LOW);
+#define LED_DEBUG5  digitalWrite(O_LED_SLA , LOW);
+#define LED_DEBUG6  digitalWrite(O_LED_PWR , LOW);
 
+#define LED_DEBUG7  digitalWrite(O_LED_4G  , HIGH);
+#define LED_DEBUG8  digitalWrite(O_LED_RF  , HIGH);
+#define LED_DEBUG9  digitalWrite(O_LED_WIFI, HIGH);
+#define LED_DEBUG10 digitalWrite(O_LED_BAT , HIGH);
+#define LED_DEBUG11 digitalWrite(O_LED_SLA , HIGH);
+#define LED_DEBUG12 digitalWrite(O_LED_PWR , HIGH);
 

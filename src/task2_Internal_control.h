@@ -51,7 +51,7 @@ void task2 () {
   //3. Check and control RF status
   if (dev.rfStatusCounter >= 18000){ //18000*100ms = 30min
     dev.rfConnStatus = 0; //0: Not connected, 1: Connected
-    digitalWrite(O_LED_RF, HIGH); //Turn off LED RF
+    //TAM_BO digitalWrite(O_LED_RF, HIGH); //Turn off LED RF               <------------------ DEBUG
   }
 
   //4. Update Current/Voltage of every Channel and store to variable every second

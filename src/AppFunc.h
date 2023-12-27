@@ -18,7 +18,7 @@ uint8_t  alreadySyncSIDIndex = 0; //Already sync SID list index
 
 
 extern void rfSendToGateway(String cmdResp, String payload);
-extern char* waitCommandWithString(const char* header, const char* str, uint16_t timeOutSec);
+extern String waitCommandWithString(String header, String str, uint16_t timeOutSec);
 extern void updateSyncTime(String message);
 extern void rfRespToGateway(String cmdResp, String statusResp);
 
@@ -337,20 +337,18 @@ void __request_C2_A1_packet(){
     //1. Send join request (C2) to gateway
     rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
     //2. Wait A1 response from gateway in WAIT_TIME_PACKET_SEC
-    char* A1Data = waitCommandWithString("A1","",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
+    String A1Data = waitCommandWithString("A1",",",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
     //3. If A1 response is received, break loop
-    if (strcmp(A1Data,"Timeout") != 0) { //If A1Data is not empty
+    if (A1Data != "") { //If A1Data is not empty
       updateSyncTime(String(A1Data)); //Update sync time
       //4. Send A1 OK response to gateway
       rfRespToGateway("A1","OK"); //Send response to Gateway
       receivedA1Flag = true; //Set receivedA1Flag
-      free(A1Data);
       break;
     }
     else{
       //If retryCounter >= 3, break loop
       if (retryCounter >= 3) {
-        free(A1Data);
         break;
       }
       retryCounter++; //Increase retryCounter
@@ -625,11 +623,10 @@ void __SyncScheduleGatewayAndNode(){
             //B2.1 Send AB "REQ_SCHEDULE" request to gateway
             rfSendToGateway("AB","REQ_SCHEDULE,"+String(reqSyncSID[i])); //Send AB,REQ_SCHEDULE,<SID> to Gateway
             //B2.2 Wait AB response from gateway
-            char* syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",WAIT_TIME_PACKET_SEC); //Receive: AB,SEND_SCHEDULE,<SID>,<Sver>,<enableFlag>,<channel>,<repeatUntilFlag>,<repeatMode>,<weakdays>,<fromDate>,<fromTimeMin>,<toTimeMin>,<untilDate>
+            String syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",WAIT_TIME_PACKET_SEC); //Receive: AB,SEND_SCHEDULE,<SID>,<Sver>,<enableFlag>,<channel>,<repeatUntilFlag>,<repeatMode>,<weakdays>,<fromDate>,<fromTimeMin>,<toTimeMin>,<untilDate>
             //B2.3 if syncScheduleData is not empty, update scheduleList
-            if (strcmp(syncScheduleData,"Timeout") != 0) { //If syncScheduleData is not empty
+            if (syncScheduleData != "") { //If syncScheduleData is not empty
               __processSyncScheduleABPacket(String(syncScheduleData)); //Process sync schedule data
-              free(syncScheduleData); //Free syncScheduleData
               rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
             } else {
               break;

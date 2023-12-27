@@ -8,10 +8,10 @@
 #include "task4_rf_com.h"
 #include "AppFunc.h"
 
-TaskHandle_t xTaskHandle_1;
-TaskHandle_t xTaskHandle_2;
-//TaskHandle_t xTaskHandle_3;
-TaskHandle_t xTaskHandle_4;
+// TaskHandle_t xTaskHandle_1;
+// TaskHandle_t xTaskHandle_2;
+// TaskHandle_t xTaskHandle_3;
+//TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
 workingFlowClass workingFlow;
 
@@ -70,13 +70,21 @@ void controllerInit(void){
   pinMode(BUTTON_SELECT, INPUT);     //Set pin mode for button SELECT
   pinMode(TFL_BACKLIGHT, OUTPUT);    //Set pin mode for LCD backlight
 
-  digitalWrite(O_LED_4G  , HIGH);    //Turn off LED 4G
-  digitalWrite(O_LED_RF  , HIGH);    //Turn off LED RF
-  digitalWrite(O_LED_WIFI, HIGH);    //Turn off LED WIFI
-  digitalWrite(O_LED_BAT , LOW );    //Turn on LED BAT
-  digitalWrite(O_LED_SLA , HIGH);    //Turn off LED SLA
-  digitalWrite(O_LED_PWR , LOW );    //Turn on LED PWR
-  digitalWrite(TFL_BACKLIGHT, LOW); //Turn off LCD backlight
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_4G  , HIGH);    //Turn off LED 4G
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_RF  , HIGH);    //Turn off LED RF
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_WIFI, HIGH);    //Turn off LED WIFI
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_BAT , LOW );    //Turn on LED BAT
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_SLA , HIGH);    //Turn off LED SLA
+  //TAMBO  <----------- DEBUG digitalWrite(O_LED_PWR , LOW );    //Turn on LED PWR
+  digitalWrite(O_LED_4G  , HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+  digitalWrite(O_LED_RF  , HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+  digitalWrite(O_LED_WIFI, HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+  digitalWrite(O_LED_BAT , HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+  digitalWrite(O_LED_SLA , HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+  digitalWrite(O_LED_PWR , HIGH);  //TAT DEN DE DUNG CHO DEBUG   <------------- DEBUG
+
+
+  digitalWrite(TFL_BACKLIGHT, LOW);  //Turn off LCD backlight
 
   Timer1.initialize(1000);                 // initialize timer1, and set a 1 millisec period
   Timer1.attachInterrupt(pwmControlCheck); // attaches callback: pwmControlCheck as a timer overflow interrupt
@@ -113,7 +121,7 @@ void setup() {
 
   workingFlow.setupFlow();
   //Serial.println(F("\n=== START ALL TASKS ==="));
-  allTaskDeclare ();
+  // allTaskDeclare ();
   Serial.println(F("\n=== END SETUP ==="));
   //Serial.print(F("Time: "));Serial.println(rtc.now().timestamp());;
   setupDoneFlag = true;
@@ -140,30 +148,30 @@ void loop() {
 // A. Assign function to tasks //
 /////////////////////////////////
 //define task handles
-void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
-void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
+//void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
+//void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
 //void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) { rfRxCheck(); vTaskDelay( 10/portTICK_PERIOD_MS);}}
+//void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) { rfRxCheck(); vTaskDelay( 10/portTICK_PERIOD_MS);}}
 
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
 void allTaskDeclare (){
  // Tasks declaration
-  xTaskCreate(
-                multask1,                 /* Function to implement the task */
-                "Check Button & SW",   /* Name of the task */
-                128,                  /* Stack size in words */
-                NULL,                  /* Task input parameter */
-                2,                    /* Priority of the task */
-                &xTaskHandle_1);       /* Task handle. */
-  xTaskCreate(
-                multask2,              /* Function to implement the task */
-                "Voltage & Current Monitoring", /* Name of the task *///                  
-                128,                   /* Stack size in words */
-                NULL,                  /* Task input parameter */
-                2,                    /* Priority of the task */
-                &xTaskHandle_2);       /* Task handle. */
+  // xTaskCreate(
+  //               multask1,                 /* Function to implement the task */
+  //               "Check Button & SW",   /* Name of the task */
+  //               128,                  /* Stack size in words */
+  //               NULL,                  /* Task input parameter */
+  //               2,                    /* Priority of the task */
+  //               &xTaskHandle_1);       /* Task handle. */
+  // xTaskCreate(
+  //               multask2,              /* Function to implement the task */
+  //               "Voltage & Current Monitoring", /* Name of the task *///                  
+  //               128,                   /* Stack size in words */
+  //               NULL,                  /* Task input parameter */
+  //               2,                    /* Priority of the task */
+  //               &xTaskHandle_2);       /* Task handle. */
   // xTaskCreate(
   //               multask3,              /* Function to implement the task */
   //               "display",             /* Name of the task */
@@ -171,11 +179,11 @@ void allTaskDeclare (){
   //               NULL,                  /* Task input parameter */
   //               3,                    /* Priority of the task */                                    
   //               &xTaskHandle_3);       /* Task handle. */
-  xTaskCreate(
-                multask4,              /* Function to implement the task */
-                "RF communication",    /* Name of the task */
-                128,                   /* Stack size in words */
-                NULL,                  /* Task input parameter */
-                2,                     /* Priority of the task */
-                &xTaskHandle_4);       /* Task handle. */
+  // xTaskCreate(
+  //               multask4,              /* Function to implement the task */
+  //               "RF communication",    /* Name of the task */
+  //               128,                   /* Stack size in words */
+  //               NULL,                  /* Task input parameter */
+  //               2,                     /* Priority of the task */
+  //               &xTaskHandle_4);       /* Task handle. */
 }
