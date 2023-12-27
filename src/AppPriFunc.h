@@ -291,20 +291,20 @@ void pwmControlCheck () {
   }
 }
 
-/**
- * Sends packet to LORA RF
- * 
- * @param command The command to be sent.
- * @param payload The payload to be sent along with the command.
- */
-void rfSend(String command, String payload){
-  String tData = command+","+UIDStr+","+nodeType+","+payload;
-  if (txQueue.isFull() == false) {
-    txQueue.enqueue(tData); //push data to txQueue if not full
-    //Print queue size
-    // Serial.print(F("Queue size: "));
-    // Serial.println(txQueue.itemCount());
-  }
-}
+// /**
+//  * Sends packet to LORA RF
+//  * 
+//  * @param command The command to be sent.
+//  * @param payload The payload to be sent along with the command.
+//  */
+// void rfSend(String command, String payload){
+//   String tData = command+","+UIDStr+","+nodeType+","+payload;
+//   if (txQueue.isFull() == false) {
+//     txQueue.enqueue(tData); //push data to txQueue if not full
+//     //Print queue size
+//     // Serial.print(F("Queue size: "));
+//     // Serial.println(txQueue.itemCount());
+//   }
+// }
 
 

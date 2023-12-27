@@ -2,7 +2,7 @@
 #include <ArduinoQueue.h>
 #define QUEUE_SIZE_ITEMS 5
 ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
-ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
+// ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
 char UID[6]; //Unique ID of the controller
 String UIDStr = ""; //Unique ID of the controller
 String nodeType = "03" ; //Node type: 03: Controller

@@ -3,19 +3,7 @@
 #endif
 
 extern void delayForLowPrioTask(uint32_t delayMs);
-
-/**
- * Sends a log message over RF communication.
- * 
- * @param logStr The log message to be sent.
- */
-void rfSendLog(String logStr){
-  String tData = "E4,"+UIDStr+","+nodeType+","+logStr;
-  if (txQueue.isFull() == false) {
-    txQueue.enqueue(tData); //push data to txQueue if not full
-  }
-}
-
+unsigned long rfLastTimeMark = 0; //Last time mark for RF communication
 /**
  * Sends data to the gateway.
  * 
@@ -24,8 +12,35 @@ void rfSendLog(String logStr){
  */
 void rfSendToGateway(String cmdResp, String payload){
   String tData = cmdResp+","+UIDStr+","+nodeType+","+payload;
-  if (txQueue.isFull() == false) {
-    txQueue.enqueue(tData); //push data to txQueue if not full
+  uint16_t counter = 0;
+  while (counter < 10000) { //Try to send data for 10s
+    if (digitalRead(I_Slave_RDY) == HIGH && millis() - rfLastTimeMark >= 100){ //Slave ready to send data
+      Serial.println(tData);
+      rfLastTimeMark = millis();
+      break;
+    }
+    delayForLowPrioTask(1); //Delay 1ms
+    counter += 1; //Increase counter
+  }
+}
+
+/**
+ * Sends a response to the gateway.
+ * 
+ * @param cmdResp The command response string. Default is "A1".
+ * @param statusResp The status response string: OK/FAIL. Default is "OK".
+ */
+void rfRespToGateway(String cmdResp, String statusResp){
+  String tData = "C4,"+UIDStr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
+  uint16_t counter = 0;
+  while (counter < 10000) { //Try to send data for 10s
+    if (digitalRead(I_Slave_RDY) == HIGH && millis() - rfLastTimeMark >= 100){ //Slave ready to send data
+      Serial.println(tData);
+      rfLastTimeMark = millis();
+      break;
+    }
+    delayForLowPrioTask(1); //Delay 1ms
+    counter += 1; //Increase counter
   }
 }
 
@@ -129,18 +144,7 @@ char* waitCommandWithString(const char* header, const char* str, uint16_t timeOu
 
 
 
-/**
- * Sends a response to the gateway.
- * 
- * @param cmdResp The command response string. Default is "A1".
- * @param statusResp The status response string: OK/FAIL. Default is "OK".
- */
-void rfRespToGateway(String cmdResp, String statusResp){
-  String tData = "C4,"+UIDStr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
-  if (txQueue.isFull() == false) {
-    txQueue.enqueue(tData); //push data to txQueue if not full
-  }
-}
+
 
 
 
@@ -216,14 +220,13 @@ void remoteTerminalStatusInAutoMode(String payload){
 
 //=============================================================================================
 //=============================================================================================
-void task4 (){
-  //1. RX check and process
-  rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
+// void task4 (){
+//   //1. RX check and process
 
-  //2. TX check and process
-  if (txQueue.isEmpty() == false && digitalRead(I_Slave_RDY) == HIGH) {
-    String tData = txQueue.dequeue();
-    // Serial.println("TX data: " + tData);
-    Serial.println(tData);
-  }
-}
+//   if (digitalRead(I_Slave_RDY) == HIGH){ //Slave ready to send data
+//     digitalWrite(O_LED_4G, HIGH); //Turn off LED RF
+//   }
+//   else{
+//     digitalWrite(O_LED_4G, LOW); //Turn on LED RF
+//   }
+// }

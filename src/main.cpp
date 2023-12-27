@@ -143,7 +143,7 @@ void loop() {
 void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
 void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
 //void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(20/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) { rfRxCheck(); vTaskDelay( 10/portTICK_PERIOD_MS);}}
 
 //////////////////////////
 // B. Declare all tasks //
@@ -153,7 +153,7 @@ void allTaskDeclare (){
   xTaskCreate(
                 multask1,                 /* Function to implement the task */
                 "Check Button & SW",   /* Name of the task */
-                64,                  /* Stack size in words */
+                128,                  /* Stack size in words */
                 NULL,                  /* Task input parameter */
                 2,                    /* Priority of the task */
                 &xTaskHandle_1);       /* Task handle. */
@@ -162,20 +162,20 @@ void allTaskDeclare (){
                 "Voltage & Current Monitoring", /* Name of the task *///                  
                 128,                   /* Stack size in words */
                 NULL,                  /* Task input parameter */
-                1,                    /* Priority of the task */
+                2,                    /* Priority of the task */
                 &xTaskHandle_2);       /* Task handle. */
-//  xTaskCreate(
-//                multask3,              /* Function to implement the task */
-//                "display",             /* Name of the task */
-//                256,                   /* Stack size in words */
-//                NULL,                  /* Task input parameter */
-//                3,                    /* Priority of the task */                                    
-//                &xTaskHandle_3);       /* Task handle. */
+  // xTaskCreate(
+  //               multask3,              /* Function to implement the task */
+  //               "display",             /* Name of the task */
+  //               256,                   /* Stack size in words */
+  //               NULL,                  /* Task input parameter */
+  //               3,                    /* Priority of the task */                                    
+  //               &xTaskHandle_3);       /* Task handle. */
   xTaskCreate(
                 multask4,              /* Function to implement the task */
                 "RF communication",    /* Name of the task */
-                512,                   /* Stack size in words */
+                128,                   /* Stack size in words */
                 NULL,                  /* Task input parameter */
-                4,                     /* Priority of the task */
+                2,                     /* Priority of the task */
                 &xTaskHandle_4);       /* Task handle. */
 }

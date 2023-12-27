@@ -2,6 +2,7 @@
 #include "appfunc.h"
 #endif
 uint8_t findMaxVoltageDone = 0; //Flag to check if findMaxVoltage function is done or not
+extern void rfRxCheck();
 
 // Run every 100ms
 void task2 () {
@@ -16,6 +17,17 @@ void task2 () {
   sendWdtCounter++;
   dev.rfStatusCounter++; //Counter for RF status
   
+  //Change 4G LED status every second
+  static bool led4GStatus = false;
+  if (led4GStatus == false) { //4G is connected
+    digitalWrite(O_LED_4G, HIGH); //Turn on LED 4G
+    led4GStatus = true;
+  }
+  else { //4G is not connected
+    digitalWrite(O_LED_4G, LOW); //Turn off LED 4G
+    led4GStatus = false;
+  }
+
   //1. Update RTC timer every minute
   if (rtcTimeCounter >= 600) {
     dev.time = rtc.now(); //Get current datetime
@@ -24,7 +36,7 @@ void task2 () {
 
   //2. Update RTC timer every minute
   if (sendWdtCounter >= 600) {
-    rfSend("10","TASK2_OK");
+    rfSendToGateway("10","TASK2_OK");
     sendWdtCounter = 0;
   }
 

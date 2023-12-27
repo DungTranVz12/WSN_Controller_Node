@@ -8,7 +8,7 @@
 #define EEPROM_ADDR_INIT     0 //EEPROM address to store init code
 
 #define EEPROM_ADDR_SCHEDULE 100 //EEPROM address to store schedule
-#define EEPROM_SCHEDULE_MAX   20 //EEPROM address to store schedule
+#define EEPROM_SCHEDULE_MAX    4 //EEPROM address to store schedule
 #define EEPROM_SCHEDULE_SIZE  15 //EEPROM address to store schedule
 
 uint16_t reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
@@ -325,8 +325,8 @@ void __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(String pay
 }
 
 void __request_C2_A1_packet(){
-  //Serial.print(F("Time: "));Serial.print(rtc.now().timestamp()); Serial.print(F(" - "));
-  //Serial.println(F("  >>> 1.1 Request C2 A1 packet... <<<"));
+  String log = "Time: " + rtc.now().timestamp() + " - >>> 1.1 Request C2 A1 packet... <<<";
+  rfSendToGateway("E4",log); //Send response to Gateway
   //1. Send join request (C2) to gateway
   //2. Wait A1 response from gateway
   //3. If A1 response is received, update sync time
@@ -546,13 +546,13 @@ void __sendInternalStatus(){
 
 
 void __sendWdtToSlave(){
-  rfSend("10","TASK1_OK");
+  rfSendToGateway("10","TASK1_OK");
 }
 
 
 void __SyncScheduleGatewayAndNode(){
-  //Serial.print(F("Time: "));Serial.print(rtc.now().timestamp()); Serial.print(F(" - "));
-  //Serial.println(F("  >>> 1.2 Sync schedule between gateway and node... <<<"));
+  String log = "Time: " + rtc.now().timestamp() + " - >>> 1.2 Sync schedule between gateway and node... <<<";
+  rfSendToGateway("E4",log); //Send response to Gateway
   // Chờ gói mới được gửi đến trong 120s.
   // Nếu gói là AB thì kiểm tra in AB.
   // Nếu gói là B0 thì kiểm tra in B0.
@@ -688,8 +688,8 @@ class workingFlowClass {
     }
 
     void joinNetworkFlow(){
-      Serial.print(F("Time: "));Serial.print(rtc.now().timestamp()); Serial.print(F(" - "));
-      Serial.println(F("=== 1. Goto JOIN NETWORK FLOW ==="));
+      String log = "Time: " + rtc.now().timestamp() + " - === 1. Goto JOIN NETWORK FLOW ===";
+      rfSendToGateway("E4",log); //Send response to Gateway
       if (setupDoneFlag == true){
         __request_C2_A1_packet(); //Request C2 A1 packet
         //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
@@ -708,8 +708,8 @@ class workingFlowClass {
 
 
     void normalWorkingFlow(){
-      Serial.print(F("Time: "));Serial.print(rtc.now().timestamp()); Serial.print(F(" - "));
-      Serial.println(F("=== 2. Goto NORMAL WORKING FLOW ==="));
+      String log = "Time: " + rtc.now().timestamp() + " - === 2. Goto NORMAL WORKING FLOW ===";
+      rfSendToGateway("E4",log); //Send response to Gateway
       unsigned long updateStatusTimeMarkMs = millis(); //Update status time mark. Send status to gateway every SEND_STATUS_PERIOD_MS
       unsigned long syncScheduleTimeMakMs = millis(); //Sync schedule time mark. Send sync schedule request to gateway every SYNC_SCHEDULE_PERIOD_MS
       while (true) {
