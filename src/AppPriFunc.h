@@ -11,7 +11,6 @@ AceButton buttonSelect(BUTTON_SELECT);
 void handleEvent(AceButton*, uint8_t, uint8_t);
 SHT2x sht;
 
-
 struct channelInfo {
   float Vout = 0; //Voltage of each channel.
   float Iout = 0; //Current of each channel.
@@ -27,7 +26,6 @@ struct channelInfo {
   uint8_t  lastControlStatus = 0; //0: Unknow, 1: MANUAL_OFF, 2: MANUAL_ON, 3: AUTO_OFF, 4: AUTO_ON
   uint32_t scheduleOper[20][2]; //Schedule operation time of each channel.
 };
-
 
 struct  deviceInfo
 {
@@ -49,7 +47,6 @@ struct  deviceInfo
   // Channel info
   channelInfo ch[5]; //Channel 0,1,2,3,4. Channel 0 is not used.
 } dev;
-
 RTC_DS1307 rtc;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 bool rtcHwOperFlag = false; //RTC hardware operation flag: True: RTC is working, False: RTC is not working.
@@ -58,6 +55,11 @@ void SHT21_Read(){
   sht.read();
   dev.boxTemp = sht.getTemperature();
   dev.boxHumi = sht.getHumidity();
+}
+
+void delayForLowPrioTask(uint32_t delayMs){
+  unsigned long startTimeMs = millis();
+  while (millis()-startTimeMs<=delayMs);
 }
 
 //***********************ADC reading**************************
@@ -80,25 +82,25 @@ void voltCurrMonUpdate(){
 // Returns the current date and time in the format: "yyyy/mm/dd (day) hh:mm:ss"
 void rtcPrintDatetime (){
   if (!rtcHwOperFlag) {
-    Serial.println("=== RTC is not working! ===");
+    //Serial.println(F("=== RTC is not working! ==="));
     return;
   }
-  DateTime now = rtc.now();
-  Serial.print("RTC: ");
-  Serial.print(now.year(), DEC);
-  Serial.print('/');
-  Serial.print(now.month(), DEC);
-  Serial.print('/');
-  Serial.print(now.day(), DEC);
-  Serial.print(" (");
-  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
-  Serial.print(") ");
-  Serial.print(now.hour(), DEC);
-  Serial.print(':');
-  Serial.print(now.minute(), DEC);
-  Serial.print(':');
-  Serial.print(now.second(), DEC);
-  Serial.println();
+  //DateTime now = rtc.now();
+  //Serial.print(F("RTC: "));
+  //Serial.print(now.year(), DEC);
+  //Serial.print(F("/"));
+  //Serial.print(now.month(), DEC);
+  //Serial.print(F("/"));
+  //Serial.print(now.day(), DEC);
+  //Serial.print(F(" ("));
+  //Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  //Serial.print(F(") "));
+  //Serial.print(now.hour(), DEC);
+  //Serial.print(F(":"));
+  //Serial.print(now.minute(), DEC);
+  //Serial.print(F(":"));
+  //Serial.print(now.second(), DEC);
+  //Serial.println();
 }
 
 // Initializes the RTC module and sets the rtcHwOperFlag to true if the hardware is operational.
@@ -107,9 +109,9 @@ void rtcInit(){
   for (int i = 0; i < 3; i++)
   {
     if (! rtc.begin()) {
-      Serial.println("Couldn't find RTC");
+      Serial.println(F("Couldn't find RTC"));
       Serial.flush();
-      delay(100);
+      delayForLowPrioTask(100); //Delay 100ms
     }else{
       rtcHwOperFlag = true;
       break;
@@ -126,11 +128,23 @@ void rtcInit(){
 // Sets the date and time for the RTC module.
 void rtcSetDatetime (uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second){
   if (!rtcHwOperFlag) {
-    Serial.println("=== RTC is not working! ===");
+    Serial.println(F("=== RTC is not working! ==="));
     return;
   }
   rtc.adjust(DateTime(year, month, day, hour, minute, second));
-  Serial.println("=== RTC is set: " + String(year) + "/" + String(month) + "/" + String(day) + " " + String(hour) + ":" + String(minute) + ":" + String(second) + " ===");
+  //Serial.print(F("=== RTC is set: "));
+  //Serial.print(year);
+  //Serial.print(F("/"));
+  //Serial.print(month);
+  //Serial.print(F("/"));
+  //Serial.print(day);
+  //Serial.print(F(" "));
+  //Serial.print(hour);
+  //Serial.print(F(":"));
+  //Serial.print(minute);
+  //Serial.print(F(":"));
+  //Serial.print(second);
+  //Serial.println(F(" ==="));
 }
 
 // Setup button pins and event handler
@@ -284,11 +298,13 @@ void pwmControlCheck () {
  * @param payload The payload to be sent along with the command.
  */
 void rfSend(String command, String payload){
-  String tData = command+","+UIDstr+","+nodeType+","+payload;
+  String tData = command+","+UIDStr+","+nodeType+","+payload;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
     //Print queue size
-    // Serial.print("Queue size: ");
+    // Serial.print(F("Queue size: "));
     // Serial.println(txQueue.itemCount());
   }
 }
+
+

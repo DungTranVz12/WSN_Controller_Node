@@ -26,7 +26,7 @@ class lcdScreen
     // Serial.println("=== TASK3: LCD UPDATE SCREEN ===");
     // Serial.println(dev.time.minute());
     if (proDev.loadFullScreenReq == 1){
-      Serial.println("=== LCD FIRST UPDATE SCREEN ===");
+      //Serial.println(F("=== LCD FIRST UPDATE SCREEN ==="));
       lastDev = proDev; //Update lastDev
       loadFullScreenReq();
       proDev.loadFullScreenReq = 0; //Reset loadFullScreenReq

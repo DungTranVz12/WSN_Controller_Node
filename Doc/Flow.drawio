@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2023-12-26T12:24:34.030Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="D_dHaxj1GbDLoCwaMClt" version="21.1.2" type="device" pages="6">
+<mxfile host="Electron" modified="2023-12-27T14:05:34.934Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="412IM6xuLMzoHFa9x4Zl" version="21.1.2" type="device" pages="6">
   <diagram id="2x4AiwME3_5MGV6KLdE0" name="Block_Diagram">
     <mxGraphModel dx="1434" dy="836" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2336" pageHeight="1654" math="0" shadow="0">
       <root>
@@ -868,6 +868,9 @@
         </mxCell>
         <mxCell id="-QqZp4ZYk-xHIhzkaI73-3" value="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=20;fontColor=#FFFFFF;" vertex="1" parent="-QqZp4ZYk-xHIhzkaI73-1">
           <mxGeometry x="5" width="30" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="-QqZp4ZYk-xHIhzkaI73-4" value="Kiểm tra hoạt động Schedule ở đâu?" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="3500" y="1600" width="220" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

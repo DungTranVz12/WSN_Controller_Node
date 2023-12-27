@@ -2,13 +2,15 @@
 #include "appfunc.h"
 #endif
 
+extern void delayForLowPrioTask(uint32_t delayMs);
+
 /**
  * Sends a log message over RF communication.
  * 
  * @param logStr The log message to be sent.
  */
 void rfSendLog(String logStr){
-  String tData = "E4,"+UIDstr+","+nodeType+","+logStr;
+  String tData = "E4,"+UIDStr+","+nodeType+","+logStr;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
   }
@@ -21,7 +23,7 @@ void rfSendLog(String logStr){
  * @param payload The payload string. Default value is an empty string.
  */
 void rfSendToGateway(String cmdResp, String payload){
-  String tData = cmdResp+","+UIDstr+","+nodeType+","+payload;
+  String tData = cmdResp+","+UIDStr+","+nodeType+","+payload;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
   }
@@ -44,7 +46,7 @@ void rfRxCheck()
     if (ch == '`')
       break;
     rData += String(ch);
-    delay(1);
+    delayForLowPrioTask(1); //Delay 1ms
   }
   rData.trim(); // Remove leading/trailing whitespaces
   //push data to rxBuff
@@ -59,10 +61,40 @@ void rfRxCheck()
   }
 }
 
-String waitCommandWithString(String header, String str, uint16_t timeOutSec){
+// String waitCommandWithString(String header, String str, uint16_t timeOutSec){
+//   uint16_t timeOutCounter = 0;
+//   while (1) {
+//     rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
+//     if (rxQueue.isEmpty() == false) {
+//       String rData = rxQueue.dequeue();
+//       //Decode rData:
+//       //+ First data before ',' is the header
+//       //+ Second data after ',' is the Gateway ID
+//       //+ Ramaining data is the payload
+//       int firstComma = rData.indexOf(',');
+//       int secondComma = rData.indexOf(',', firstComma + 1);
+//       String header = rData.substring(0, firstComma);
+//       String gatewayID = rData.substring(firstComma + 1, secondComma);
+//       String payload = rData.substring(secondComma + 1);
+//       // Serial.println("header: " + header);
+//       // Serial.println("Gateway ID: " + gatewayID);
+//       // Serial.println("Payload: " + payload);
+//       //Check if header = header and str in payload
+//       if (header == header && payload.indexOf(str) >= 0) {
+//         return rData;
+//       }
+//     }
+//     timeOutCounter++;
+//     if (timeOutCounter >= timeOutSec*10) {
+//       return "";
+//     }
+//     delay(100);
+//   }
+// }
+
+char* waitCommandWithString(const char* header, const char* str, uint16_t timeOutSec) {
   uint16_t timeOutCounter = 0;
   while (1) {
-    rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
     if (rxQueue.isEmpty() == false) {
       String rData = rxQueue.dequeue();
       //Decode rData:
@@ -71,26 +103,28 @@ String waitCommandWithString(String header, String str, uint16_t timeOutSec){
       //+ Ramaining data is the payload
       int firstComma = rData.indexOf(',');
       int secondComma = rData.indexOf(',', firstComma + 1);
-      String header = rData.substring(0, firstComma);
+      String receivedHeader = rData.substring(0, firstComma);
       String gatewayID = rData.substring(firstComma + 1, secondComma);
       String payload = rData.substring(secondComma + 1);
-      // Serial.println("header: " + header);
+      // Serial.println("header: " + receivedHeader);
       // Serial.println("Gateway ID: " + gatewayID);
       // Serial.println("Payload: " + payload);
       //Check if header = header and str in payload
-      if (header == header && payload.indexOf(str) >= 0) {
-        return rData;
+      if (strcmp(receivedHeader.c_str(), header) == 0 && strstr(payload.c_str(), str) != NULL) {
+        char* result = (char*)malloc(rData.length() + 1);
+        rData.toCharArray(result, rData.length() + 1);
+        return result;
       }
     }
     timeOutCounter++;
-    if (timeOutCounter >= timeOutSec*10) {
-      return "";
+    if (timeOutCounter >= timeOutSec * 10) {
+      String rData = "Timeout";
+      char* result = (char*)malloc(rData.length() + 1);
+      rData.toCharArray(result, rData.length() + 1);
+      return result;
     }
-    delay(100);
+    delayForLowPrioTask(100); //Delay 100ms
   }
-
-
-
 }
 
 
@@ -102,7 +136,7 @@ String waitCommandWithString(String header, String str, uint16_t timeOutSec){
  * @param statusResp The status response string: OK/FAIL. Default is "OK".
  */
 void rfRespToGateway(String cmdResp, String statusResp){
-  String tData = "C4,"+UIDstr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
+  String tData = "C4,"+UIDStr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
   if (txQueue.isFull() == false) {
     txQueue.enqueue(tData); //push data to txQueue if not full
   }
@@ -180,66 +214,9 @@ void remoteTerminalStatusInAutoMode(String payload){
 
 
 
-
-
 //=============================================================================================
 //=============================================================================================
 void task4 (){
-  // //0. Check and send join request at the first time
-  // // This code checks if a join request has been sent and if enough time has passed since the last join request. 
-  // // If the conditions are met, it sends a join request to the Gateway and resets the lastJoinRequestTime.
-  // if (joinRequestSent == false && millis() - lastJoinRequestTime >= 60000) {
-  //   rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
-  //   lastJoinRequestTime = millis(); //Reset lastJoinRequestTime
-  // }
-  // //1. RX check and process
-  // rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
-  // if (rxQueue.isEmpty() == false) {
-  //   String rData = rxQueue.dequeue();
-  //   //Decode rData:
-  //   //+ First data before ',' is the command
-  //   //+ Second data after ',' is the Gateway ID
-  //   //+ Ramaining data is the payload
-  //   int firstComma = rData.indexOf(',');
-  //   int secondComma = rData.indexOf(',', firstComma + 1);
-  //   String command = rData.substring(0, firstComma);
-  //   String gatewayID = rData.substring(firstComma + 1, secondComma);
-  //   String payload = rData.substring(secondComma + 1);
-  //   // Serial.println("Command: " + command);
-  //   // Serial.println("Gateway ID: " + gatewayID);
-  //   // Serial.println("Payload: " + payload);
-
-  //   //###########################//
-  //   //Process command            //
-  //   //###########################//
-  //   //Packet A1: Synchronization time
-  //   //Rx Data:   A1,<GW_UID>,<hh>,<mm>,<ss>,<dd>,<mm>,<yyyy>
-  //   if (command == "A1") {
-  //     joinRequestSent = true; //Set joinRequestSent flag
-  //     updateSyncTime(rData); //Update sync time
-  //     rfRespToGateway("A1","OK"); //Send response to Gateway
-  //   }
-    
-  //   //Packet AC: Set terminal status
-  //   //Rx Data:   AC,<GW_UID>,"SET_TERMINAL",<CH0-3>,<ON/OFF>
-  //   if (command == "AC") {
-  //     remoteTerminalStatusInAutoMode(payload); //Remote terminal status in AUTO mode
-  //     rfRespToGateway("AC","OK"); //Send response to Gateway
-  //   }
-
-
-
-
-
-
-  //   //Packet B0: Finshed setting up
-  //   if (command == "B0") {
-  //     rfRespToGateway("B0","OK"); //Send response to Gateway
-  //   }
-
-
-  // }
-
   //1. RX check and process
   rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
 
@@ -248,7 +225,5 @@ void task4 (){
     String tData = txQueue.dequeue();
     // Serial.println("TX data: " + tData);
     Serial.println(tData);
-    delay(100);
   }
-
 }

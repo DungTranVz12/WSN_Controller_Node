@@ -3,8 +3,8 @@
 #define QUEUE_SIZE_ITEMS 5
 ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
 ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
-char UID[20]; //Unique ID of the controller
-String UIDstr = ""; //Unique ID of the controller
+char UID[6]; //Unique ID of the controller
+String UIDStr = ""; //Unique ID of the controller
 String nodeType = "03" ; //Node type: 03: Controller
 String fwVer = "V0.1"; //Firmware version
 bool joinRequestSent = false; //Flag to check if join request has been sent
@@ -12,8 +12,13 @@ unsigned long lastJoinRequestTime = millis() - 60000; //Last time join request w
 bool setupDoneFlag = false; //Flag to check if setup process is done
 bool receivedA1Flag = false; //Reset receivedA1Flag
 bool joinReqDoneFlag = false; //Join request done flag
+#define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
 #define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
 #define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
+
+// #define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
+// #define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
+// #define SYNC_SCHEDULE_PERIOD_MS  20000 //Sync schedule period 900s = 15min
 
  
 //*************Define GPIO*************
@@ -56,7 +61,7 @@ bool joinReqDoneFlag = false; //Join request done flag
 #define I_Vmon_DC_IN     A8 //Monitor DC input voltage.
 #define I_Vmon_SS_SYS    A9 //Monitor voltage of the sensor which measures the current of whole system.
 #define I_Vmon_DOOR     A15 //Monitor voltage status of the door.
-#define I_Slave_RDY     20  //Monitor Slave RDY pin.
+#define I_Slave_RDY      11 //Monitor Slave RDY pin.
    
 #define BUTTON_BACK      33 //Button BACK of the box inside cabinet.
 #define BUTTON_DOWN      31 //Button DOWN of the box inside cabinet.
@@ -91,7 +96,6 @@ bool joinReqDoneFlag = false; //Join request done flag
 // #define ADDR_CH2_OPER_STS 1
 // #define ADDR_CH3_OPER_STS 2
 // #define ADDR_CH4_OPER_STS 3
-
 
 
 

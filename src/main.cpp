@@ -8,31 +8,34 @@
 #include "task4_rf_com.h"
 #include "AppFunc.h"
 
-
+TaskHandle_t xTaskHandle_1;
 TaskHandle_t xTaskHandle_2;
-TaskHandle_t xTaskHandle_3;
+//TaskHandle_t xTaskHandle_3;
 TaskHandle_t xTaskHandle_4;
 void allTaskDeclare();
-//workingFlowClass workingFlow;
+workingFlowClass workingFlow;
 
-void debugPrint(){
-  Serial.println("=== DEBUG ===");
-  rtcPrintDatetime(); //Print current datetime
-  SHT21_Read();
-  Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
-  Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
-  Serial.println("-----------------------------");
-  // ADC_Read();
-  Serial.print("CH1_Vmax      : ");Serial.print(dev.ch[1].Vout,1);Serial.println("V");
-  // Print dev.ch[1].listVolt in array
-  Serial.print("CH1_Vmax_list : ");
-  for (int i = 0; i < 20; i++)
-  {
-    Serial.print(dev.ch[1].listVolt[i]);
-    Serial.print(" ");
-  }
-  delay(5000);
-}
+
+
+
+//void debugPrint(){
+//  Serial.println("=== DEBUG ===");
+//  rtcPrintDatetime(); //Print current datetime
+//  SHT21_Read();
+//  Serial.print("Temperature   : ");Serial.print(dev.boxTemp,1);Serial.println("oC");
+//  Serial.print("Humidity      : ");Serial.print(dev.boxHumi,1);Serial.println("%");
+//  Serial.println("-----------------------------");
+//  // ADC_Read();
+//  Serial.print("CH1_Vmax      : ");Serial.print(dev.ch[1].Vout,1);Serial.println("V");
+//  // Print dev.ch[1].listVolt in array
+//  Serial.print("CH1_Vmax_list : ");
+//  for (int i = 0; i < 20; i++)
+//  {
+//    Serial.print(dev.ch[1].listVolt[i]);
+//    Serial.print(" ");
+//  }
+//  delay(5000);
+//}
 
 void controllerInit(void){
   Serial.begin(115200); //Initialize serial port
@@ -103,29 +106,31 @@ void setup() {
   controllerInit(); //Initialize controller
 
   //2. print 6 bytes of UniqueID
-  sprintf(UID, "%02X%02X%02X%02X%02X%02X", (unsigned int)UniqueID[0], (unsigned int)UniqueID[1], (unsigned int)UniqueID[2]);
-  UIDstr = String(UID[0]) + String(UID[1]) + String(UID[2]) + String(UID[3]) + String(UID[4]) + String(UID[5]);
-  Serial.print("Unique ID: ");
-  Serial.println(UIDstr);
+  sprintf(UID, "%2X%2X%2X", (unsigned int)UniqueID[0], (unsigned int)UniqueID[1], (unsigned int)UniqueID[2]);
+  UIDStr = String(UID);
+  Serial.print(F("Unique ID: "));
+  Serial.println(UIDStr);
 
-  //workingFlow.setupFlow();
-  Serial.println("\n=== START ALL TASKS ===");
+  workingFlow.setupFlow();
+  //Serial.println(F("\n=== START ALL TASKS ==="));
   allTaskDeclare ();
-  Serial.println("\n=== END SETUP ===");
+  Serial.println(F("\n=== END SETUP ==="));
+  //Serial.print(F("Time: "));Serial.println(rtc.now().timestamp());;
   setupDoneFlag = true;
 
   // rfSendToGateway("A6","START_WPS_MODE"); //<--------------------- DEBUG
 }
 
 void loop() {
-  // Serial.println("=== LOOP ===");
-  task1 (); //Check button & SW
+  workingFlow.mainFlow();
+
+
   //TEST
-  dev.firstLoadMem = 1; //First load memory <--------------------- DEBUG
-  dev.ch[1].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
-  dev.ch[2].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
-  dev.ch[3].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
-  dev.ch[4].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
+  // dev.firstLoadMem = 1; //First load memory <--------------------- DEBUG
+  // dev.ch[1].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
+  // de)v.ch[2].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
+  // dev.ch[3].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
+  // dev.ch[4].autoControl = CONTROL_ON; //Auto control: CONTROL_ON
 }
 
 //-----------------------------------------------------------------------------------------------------------//
@@ -135,41 +140,42 @@ void loop() {
 // A. Assign function to tasks //
 /////////////////////////////////
 //define task handles
-// void multask1 (void * pvParameters) {vTaskDelay( 5/portTICK_PERIOD_MS); while (1) {if(topButtonInConf == false) updateCO2Value (); vTaskDelay(10000/portTICK_PERIOD_MS);}}
-void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay(100/portTICK_PERIOD_MS);}}
-void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(100/portTICK_PERIOD_MS);}}
+void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
+void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
+//void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) {task4(); vTaskDelay(20/portTICK_PERIOD_MS);}}
+
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
 void allTaskDeclare (){
  // Tasks declaration
+  xTaskCreate(
+                multask1,                 /* Function to implement the task */
+                "Check Button & SW",   /* Name of the task */
+                64,                  /* Stack size in words */
+                NULL,                  /* Task input parameter */
+                2,                    /* Priority of the task */
+                &xTaskHandle_1);       /* Task handle. */
+  xTaskCreate(
+                multask2,              /* Function to implement the task */
+                "Voltage & Current Monitoring", /* Name of the task *///                  
+                128,                   /* Stack size in words */
+                NULL,                  /* Task input parameter */
+                1,                    /* Priority of the task */
+                &xTaskHandle_2);       /* Task handle. */
 //  xTaskCreate(
-//                  multask1,                 /* Function to implement the task */
-//                  "Check Button & SW",   /* Name of the task */
-//                  1024,                  /* Stack size in words */
-//                  NULL,                  /* Task input parameter */
-//                  20,                    /* Priority of the task */
-//                  &xTaskHandle_1);       /* Task handle. */
- xTaskCreate(
-                 multask2,              /* Function to implement the task */
-                 "Voltage & Current Monitoring", /* Name of the task *///                  
-                 256,                   /* Stack size in words */
-                 NULL,                  /* Task input parameter */
-                 10,                    /* Priority of the task */
-                 &xTaskHandle_2);       /* Task handle. */
- xTaskCreate(
-                 multask3,              /* Function to implement the task */
-                 "display",             /* Name of the task */
-                 256,                   /* Stack size in words */
-                 NULL,                  /* Task input parameter */
-                 10,                    /* Priority of the task */                                    
-                 &xTaskHandle_3);       /* Task handle. */
- xTaskCreate(
-                 multask4,              /* Function to implement the task */
-                 "RF communication",    /* Name of the task */
-                 256,                   /* Stack size in words */
-                 NULL,                  /* Task input parameter */
-                 10,                     /* Priority of the task */
-                 &xTaskHandle_4);       /* Task handle. */
+//                multask3,              /* Function to implement the task */
+//                "display",             /* Name of the task */
+//                256,                   /* Stack size in words */
+//                NULL,                  /* Task input parameter */
+//                3,                    /* Priority of the task */                                    
+//                &xTaskHandle_3);       /* Task handle. */
+  xTaskCreate(
+                multask4,              /* Function to implement the task */
+                "RF communication",    /* Name of the task */
+                512,                   /* Stack size in words */
+                NULL,                  /* Task input parameter */
+                4,                     /* Priority of the task */
+                &xTaskHandle_4);       /* Task handle. */
 }

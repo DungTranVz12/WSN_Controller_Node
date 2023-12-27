@@ -42,7 +42,5 @@ void task1 () {
   dev.ch[2].i_contactorStatus = 1-digitalRead(I_RL_CH2); //0: OFF, 1: ON
   dev.ch[3].i_contactorStatus = 1-digitalRead(I_RL_CH3); //0: OFF, 1: ON
   dev.ch[4].i_contactorStatus = 1-digitalRead(I_RL_CH4); //0: OFF, 1: ON
-
-  delay(10);
 }
 
