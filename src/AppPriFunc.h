@@ -59,7 +59,10 @@ void SHT21_Read(){
 
 void delayForLowPrioTask(uint32_t delayMs){
   unsigned long startTimeMs = millis();
-  while (millis()-startTimeMs<=delayMs);
+  unsigned long i = 0;
+  while (millis()-startTimeMs<=delayMs){
+    i += 1;
+  };
 }
 
 //***********************ADC reading**************************

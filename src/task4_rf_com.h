@@ -14,9 +14,12 @@ void rfSendToGateway(String cmdResp, String payload){
   String tData = cmdResp+","+UIDStr+","+nodeType+","+payload;
   uint16_t counter = 0;
   while (counter < 10000) { //Try to send data for 10s
-    if (digitalRead(I_Slave_RDY) == HIGH && (millis() - rfLastTimeMark) >= 100){ //Slave ready to send data
-      Serial.println(tData);
-      rfLastTimeMark = millis();
+    if (lockTxQueueUartSide != true){ //Check if it is NOT locked from UART side
+      lockTxQueueTaskSide = true; //Lock from task side
+      if (txQueue.isFull() == false) {
+        txQueue.enqueue(tData); //push data to txQueue if not full
+      }
+      lockTxQueueTaskSide = false; //Release lock from task side
       break;
     }
     delayForLowPrioTask(1); //Delay 1ms
@@ -34,9 +37,12 @@ void rfRespToGateway(String cmdResp, String statusResp){
   String tData = "C4,"+UIDStr+","+nodeType+",CMD_RESPONSE,"+cmdResp+","+statusResp;
   uint16_t counter = 0;
   while (counter < 10000) { //Try to send data for 10s
-    if (digitalRead(I_Slave_RDY) == HIGH && millis() - rfLastTimeMark >= 100){ //Slave ready to send data
-      Serial.println(tData);
-      rfLastTimeMark = millis();
+    if (lockTxQueueUartSide != true){ //Check if it is NOT locked from UART side
+      lockTxQueueTaskSide = true; //Lock from task side
+      if (txQueue.isFull() == false) {
+        txQueue.enqueue(tData); //push data to txQueue if not full
+      }
+      lockTxQueueTaskSide = false; //Release lock from task side
       break;
     }
     delayForLowPrioTask(1); //Delay 1ms
@@ -44,76 +50,11 @@ void rfRespToGateway(String cmdResp, String statusResp){
   }
 }
 
-/**
- * @brief Checks for incoming data from the serial port and adds it to the receive buffer.
- * 
- * This function reads data from the serial port until it encounters the '`' character. 
- * The received data is then trimmed to remove leading and trailing whitespaces. 
- * If the receive buffer is not full, the data is added to the buffer using the enqueue() function.
- * 
- * @note This function assumes that the Serial object has been initialized and is available for reading.
- */
-
-void rfRxCheck()
-{
-  while (Serial.available()) {
-    char ch = (char)Serial.read();
-    if (ch == '`'){
-      //push data to rxBuff
-      rfRxData.trim(); // Remove leading/trailing whitespaces
-      if (rfRxData.length() > 0) {
-        if (rxQueue.isFull() == false) {
-          rxQueue.enqueue(rfRxData); //push data to rxBuff if not full
-        }
-        //Update RF status
-        dev.rfConnStatus = 1; //0: Not connected, 1: Connected
-        dev.rfStatusCounter = 0; //Reset RF status counter
-        //TAM_BO digitalWrite(O_LED_RF, LOW); //Turn on LED RF               <--------------------- DEBUG
-      }
-      rfRxData = ""; //Reset rfRxData
-      break;
-    }
-    rfRxData += String(ch);
-    // delayForLowPrioTask(1); //Delay 1ms
-  }
-}
-
-// String waitCommandWithString(String header, String str, uint16_t timeOutSec){
-//   uint16_t timeOutCounter = 0;
-//   while (1) {
-//     rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
-//     if (rxQueue.isEmpty() == false) {
-//       String rData = rxQueue.dequeue();
-//       //Decode rData:
-//       //+ First data before ',' is the header
-//       //+ Second data after ',' is the Gateway ID
-//       //+ Ramaining data is the payload
-//       int firstComma = rData.indexOf(',');
-//       int secondComma = rData.indexOf(',', firstComma + 1);
-//       String header = rData.substring(0, firstComma);
-//       String gatewayID = rData.substring(firstComma + 1, secondComma);
-//       String payload = rData.substring(secondComma + 1);
-//       // Serial.println("header: " + header);
-//       // Serial.println("Gateway ID: " + gatewayID);
-//       // Serial.println("Payload: " + payload);
-//       //Check if header = header and str in payload
-//       if (header == header && payload.indexOf(str) >= 0) {
-//         return rData;
-//       }
-//     }
-//     timeOutCounter++;
-//     if (timeOutCounter >= timeOutSec*10) {
-//       return "";
-//     }
-//     delay(100);
-//   }
-// }
-
 String waitCommandWithString(String header, String str, uint16_t timeOutSec) {
   unsigned long timeMark = millis();
   while (1) {
-    rfRxCheck(); //Check and retrieve data from LoRa then push to rxQueue
-    if (rxQueue.isEmpty() == false) {
+    if (lockRxQueueUartSide != true && rxQueue.isEmpty() == false) {
+      lockRxQueueTaskSide = true; //Lock from task side
       String rData = rxQueue.dequeue();
       // rfSendToGateway("E4", rData); //Send data to gateway (for debug) <--------------------- DEBUG
       //Decode rData:
@@ -123,20 +64,17 @@ String waitCommandWithString(String header, String str, uint16_t timeOutSec) {
       String payload = rData.substring(secondComma + 1);
       //Check if header = header and str in payload
       if (receivedHeader == header && payload.indexOf(str) >= 0) {
+        lockRxQueueTaskSide = false; //Release lock from task side
         return rData;
       }
     }
+    //Check timeout
     if (millis() - timeMark >= timeOutSec*1000 ) {
+      lockRxQueueTaskSide = false; //Release lock from task side
       return "";
     }
   }
 }
-
-
-
-
-
-
 
 /**
  * @brief Updates the synchronization time based on the message string.
@@ -211,13 +149,56 @@ void remoteTerminalStatusInAutoMode(String payload){
 
 //=============================================================================================
 //=============================================================================================
-// void task4 (){
-//   //1. RX check and process
+void task4 (){
+  //1. RX check and process
+  // - Kiểm tra rxQueue có đang bị lock từ phía Task hay không
+  // - Nếu không thì lock từ phía UART và kiểm tra Serial.available()
+  // - Nếu có thì lấy dữ liệu ra và push vào rxQueue (Nếu rxQueue chưa full)
+  // - Sau khi push xong thì release lock từ phía UART
+  if (lockRxQueueTaskSide != true) { //Check if it is NOT locked from task side
+    lockRxQueueUartSide = true; //Lock from UART side
+    while (Serial.available()) {
+      char ch = (char)Serial.read();
+      if (ch == '`'){
+        //push data to rxBuff
+        rfRxData.trim(); // Remove leading/trailing whitespaces
+        if (rfRxData.length() > 0) {
+          if (rxQueue.isFull() == false) {
+            rxQueue.enqueue(rfRxData); //push data to rxBuff if not full
+          }
+          //Update RF status
+          dev.rfConnStatus = 1; //0: Not connected, 1: Connected
+          dev.rfStatusCounter = 0; //Reset RF status counter
+          //TAM_BO digitalWrite(O_LED_RF, LOW); //Turn on LED RF               <--------------------- DEBUG
+        }
+        rfRxData = ""; //Reset rfRxData
+        break;
+      }
+      rfRxData += String(ch);
+    }
+    lockRxQueueUartSide = false; //Release lock from UART side
+  }
 
-//   if (digitalRead(I_Slave_RDY) == HIGH){ //Slave ready to send data
-//     digitalWrite(O_LED_4G, HIGH); //Turn off LED RF
-//   }
-//   else{
-//     digitalWrite(O_LED_4G, LOW); //Turn on LED RF
-//   }
-// }
+  //2. TX check and process
+  // - Kiểm tra txQueue có đang bị lock từ phía Task hay không
+  // - Nếu không thì lock từ phía UART và kiểm tra txQueue có dữ liệu hay không
+  // - Nếu có thì lấy dữ liệu ra và gửi đi (Nếu Slave RDY = HIGH và thời gian từ lần gửi trước đó đến giờ >= 100ms)
+  // - Sau khi gửi xong thì release lock từ phía UART
+  if (lockTxQueueTaskSide != true) { //Check if it is NOT locked from task side
+    lockTxQueueUartSide = true; //Lock from UART side
+    if (txQueue.isEmpty() == false) {
+      String tData = txQueue.dequeue();
+      uint16_t counter = 0;
+      while (counter < 10000) { //Try to send data for 10s
+        if (digitalRead(I_Slave_RDY) == HIGH && (millis() - rfLastTimeMark) >= 100){ //Slave ready to send data
+          Serial.println(tData);
+          rfLastTimeMark = millis();
+          break;
+        }
+        delayForLowPrioTask(1); //Delay 1ms
+        counter += 1; //Increase counter
+      }
+    }
+    lockTxQueueUartSide = false; //Release lock from UART side
+  }
+}

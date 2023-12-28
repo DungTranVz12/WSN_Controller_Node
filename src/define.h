@@ -1,8 +1,6 @@
 #pragma once
 #include <ArduinoQueue.h>
-#define QUEUE_SIZE_ITEMS 5
-ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
-// ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
+
 char UID[6]; //Unique ID of the controller
 String UIDStr = ""; //Unique ID of the controller
 String nodeType = "03" ; //Node type: 03: Controller
@@ -12,14 +10,26 @@ unsigned long lastJoinRequestTime = millis() - 60000; //Last time join request w
 bool setupDoneFlag = false; //Flag to check if setup process is done
 bool receivedA1Flag = false; //Reset receivedA1Flag
 bool joinReqDoneFlag = false; //Join request done flag
-#define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
-#define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
-#define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
-String rfRxData = ""; // Data received from serial port
+//#define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
+//#define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
+//#define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
 
-// #define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
-// #define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
-// #define SYNC_SCHEDULE_PERIOD_MS  20000 //Sync schedule period 900s = 15min
+#define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
+#define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
+#define SYNC_SCHEDULE_PERIOD_MS  20000 //Sync schedule period 900s = 15min
+
+//======= TX/RX QUEUE =======
+String rfRxData = ""; // Data received from serial port
+#define QUEUE_RX_SIZE_ITEMS 2
+#define QUEUE_TX_SIZE_ITEMS 5
+ArduinoQueue<String> rxQueue(QUEUE_RX_SIZE_ITEMS);
+ArduinoQueue<String> txQueue(QUEUE_TX_SIZE_ITEMS);
+bool lockRxQueueUartSide = false; //Lock rxQueue from UART side
+bool lockRxQueueTaskSide = false; //Lock rxQueue from task side
+bool lockTxQueueUartSide = false; //Lock txQueue from UART side
+bool lockTxQueueTaskSide = false; //Lock txQueue from task side
+
+
 
  
 //*************Define GPIO*************

@@ -8,7 +8,7 @@
 #define EEPROM_ADDR_INIT     0 //EEPROM address to store init code
 
 #define EEPROM_ADDR_SCHEDULE 100 //EEPROM address to store schedule
-#define EEPROM_SCHEDULE_MAX    4 //EEPROM address to store schedule
+#define EEPROM_SCHEDULE_MAX    1 //EEPROM address to store schedule
 #define EEPROM_SCHEDULE_SIZE  15 //EEPROM address to store schedule
 
 uint16_t reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
@@ -327,6 +327,7 @@ void __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(String pay
 void __request_C2_A1_packet(){
   String log = "Time: " + rtc.now().timestamp() + " - >>> 1.1 Request C2 A1 packet... <<<";
   rfSendToGateway("E4",log); //Send response to Gateway
+  LED_DEBUG4
   //1. Send join request (C2) to gateway
   //2. Wait A1 response from gateway
   //3. If A1 response is received, update sync time
@@ -336,19 +337,27 @@ void __request_C2_A1_packet(){
   while (true) {
     //1. Send join request (C2) to gateway
     rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
+    LED_DEBUG5
     //2. Wait A1 response from gateway in WAIT_TIME_PACKET_SEC
-    String A1Data = waitCommandWithString("A1",",",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
+    String A1Data = "";
+//TAMBO    A1Data = waitCommandWithString("A1",",",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
+    LED_DEBUG6
     //3. If A1 response is received, break loop
     if (A1Data != "") { //If A1Data is not empty
+      LED_DEBUG7
       updateSyncTime(String(A1Data)); //Update sync time
+      LED_DEBUG8
       //4. Send A1 OK response to gateway
       rfRespToGateway("A1","OK"); //Send response to Gateway
+      LED_DEBUG9
       receivedA1Flag = true; //Set receivedA1Flag
       break;
     }
     else{
+      LED_DEBUG10
       //If retryCounter >= 3, break loop
       if (retryCounter >= 3) {
+        LED_DEBUG11
         break;
       }
       retryCounter++; //Increase retryCounter
@@ -686,20 +695,23 @@ class workingFlowClass {
     }
 
     void joinNetworkFlow(){
+      LED_DEBUG1
       String log = "Time: " + rtc.now().timestamp() + " - === 1. Goto JOIN NETWORK FLOW ===";
       rfSendToGateway("E4",log); //Send response to Gateway
+      LED_DEBUG2
       if (setupDoneFlag == true){
+        LED_DEBUG3
         __request_C2_A1_packet(); //Request C2 A1 packet
-        //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
-        if (receivedA1Flag == false) {
-          //Serial.println(F("       => Cannot join network!"));
-          //Serial.println(F("       => Exit join network flow!"));
-          return;
-        }
-        //Nếu nhận được A1 thì tiếp tục quá trình JOIN NETWORK bằng việc chờ gói tin đồng bộ schedule cho đến khi nhận được gói B0.
- 
-        //=====================================================================================
-        __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
+//TAMBO        //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
+//TAMBO        if (receivedA1Flag == false) {
+//TAMBO          //Serial.println(F("       => Cannot join network!"));
+//TAMBO          //Serial.println(F("       => Exit join network flow!"));
+//TAMBO          return;
+//TAMBO        }
+//TAMBO        //Nếu nhận được A1 thì tiếp tục quá trình JOIN NETWORK bằng việc chờ gói tin đồng bộ schedule cho đến khi nhận được gói B0.
+//TAMBO 
+//TAMBO        //=====================================================================================
+//TAMBO        __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
       }
     };
 
@@ -813,10 +825,10 @@ class workingFlowClass {
 
     void mainFlow(){
       joinNetworkFlow();
-      __checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
-      __sendInternalStatus(); //Send internal status to gateway
-      __sendWdtToSlave(); //Send WDT to slave
-      normalWorkingFlow(); //Loop forever if joinReqDoneFlag = true
+      //__checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
+      //__sendInternalStatus(); //Send internal status to gateway
+      //__sendWdtToSlave(); //Send WDT to slave
+      //normalWorkingFlow(); //Loop forever if joinReqDoneFlag = true
     }
 
 

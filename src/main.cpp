@@ -8,13 +8,17 @@
 #include "task4_rf_com.h"
 #include "AppFunc.h"
 
-// TaskHandle_t xTaskHandle_1;
-// TaskHandle_t xTaskHandle_2;
-// TaskHandle_t xTaskHandle_3;
-//TaskHandle_t xTaskHandle_4;
+TaskHandle_t xTaskHandle_1;
+TaskHandle_t xTaskHandle_2;
+//TaskHandle_t xTaskHandle_3;
+TaskHandle_t xTaskHandle_4;
+unsigned long task1Counter = 0; 
+unsigned long task2Counter = 0; 
+unsigned long task3Counter = 0; 
+unsigned long task4Counter = 0;
+unsigned long taskBackgroundCounter = 0; 
 void allTaskDeclare();
 workingFlowClass workingFlow;
-
 
 
 
@@ -121,8 +125,8 @@ void setup() {
 
   workingFlow.setupFlow();
   //Serial.println(F("\n=== START ALL TASKS ==="));
-  // allTaskDeclare ();
-  Serial.println(F("\n=== END SETUP ==="));
+  allTaskDeclare ();
+  //Serial.println(F("\n=== END SETUP ==="));
   //Serial.print(F("Time: "));Serial.println(rtc.now().timestamp());;
   setupDoneFlag = true;
 
@@ -130,6 +134,8 @@ void setup() {
 }
 
 void loop() {
+  taskBackgroundCounter += 1;
+  //rfRespToGateway("E4","Time: " + rtc.now().timestamp() + " - TASK_COUNTER_T1("+String(task1Counter)+")_T2("+String(task2Counter)+")_T3("+String(task3Counter)+")_T4("+String(task4Counter)+")_BG("+String(taskBackgroundCounter)+")");
   workingFlow.mainFlow();
 
 
@@ -148,42 +154,42 @@ void loop() {
 // A. Assign function to tasks //
 /////////////////////////////////
 //define task handles
-//void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
-//void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
-//void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
-//void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) { rfRxCheck(); vTaskDelay( 10/portTICK_PERIOD_MS);}}
+//void multask1 (void * pvParameters) {vTaskDelay(300/portTICK_PERIOD_MS); while (1) {task1Counter += 1; task1(); vTaskDelay(  52/portTICK_PERIOD_MS);}}
+//void multask2 (void * pvParameters) {vTaskDelay(100/portTICK_PERIOD_MS); while (1) {task2Counter += 1; task2(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
+//void multask3 (void * pvParameters) {vTaskDelay(150/portTICK_PERIOD_MS); while (1) {task3Counter += 1; task3(); vTaskDelay(1000/portTICK_PERIOD_MS);}}
+void multask4 (void * pvParameters) {vTaskDelay(850/portTICK_PERIOD_MS); while (1) {task4Counter += 1; task4(); vTaskDelay( 100/portTICK_PERIOD_MS);}}
 
 //////////////////////////
 // B. Declare all tasks //
 //////////////////////////
 void allTaskDeclare (){
  // Tasks declaration
-  // xTaskCreate(
-  //               multask1,                 /* Function to implement the task */
-  //               "Check Button & SW",   /* Name of the task */
-  //               128,                  /* Stack size in words */
-  //               NULL,                  /* Task input parameter */
-  //               2,                    /* Priority of the task */
-  //               &xTaskHandle_1);       /* Task handle. */
-  // xTaskCreate(
-  //               multask2,              /* Function to implement the task */
-  //               "Voltage & Current Monitoring", /* Name of the task *///                  
-  //               128,                   /* Stack size in words */
-  //               NULL,                  /* Task input parameter */
-  //               2,                    /* Priority of the task */
-  //               &xTaskHandle_2);       /* Task handle. */
-  // xTaskCreate(
-  //               multask3,              /* Function to implement the task */
-  //               "display",             /* Name of the task */
-  //               256,                   /* Stack size in words */
-  //               NULL,                  /* Task input parameter */
-  //               3,                    /* Priority of the task */                                    
-  //               &xTaskHandle_3);       /* Task handle. */
-  // xTaskCreate(
-  //               multask4,              /* Function to implement the task */
-  //               "RF communication",    /* Name of the task */
-  //               128,                   /* Stack size in words */
-  //               NULL,                  /* Task input parameter */
-  //               2,                     /* Priority of the task */
-  //               &xTaskHandle_4);       /* Task handle. */
+//  xTaskCreate(
+//                multask1,                 /* Function to implement the task */
+//                "Check Button & SW",   /* Name of the task */
+//                64,                  /* Stack size in words */
+//                NULL,                  /* Task input parameter */
+//                2,                    /* Priority of the task */
+//                &xTaskHandle_1);       /* Task handle. */
+//  xTaskCreate(
+//                multask2,              /* Function to implement the task */
+//                "Voltage & Current Monitoring", /* Name of the task *///                  
+//                128,                   /* Stack size in words */
+//                NULL,                  /* Task input parameter */
+//                1,                    /* Priority of the task */
+//                &xTaskHandle_2);       /* Task handle. */
+//  xTaskCreate(
+//                multask3,              /* Function to implement the task */
+//                "display",             /* Name of the task */
+//                256,                   /* Stack size in words */
+//                NULL,                  /* Task input parameter */
+//                3,                    /* Priority of the task */                                    
+//                &xTaskHandle_3);       /* Task handle. */
+  xTaskCreate(
+                multask4,              /* Function to implement the task */
+                "RF communication",    /* Name of the task */
+                256,                   /* Stack size in words */
+                NULL,                  /* Task input parameter */
+                4,                     /* Priority of the task */
+                &xTaskHandle_4);       /* Task handle. */
 }
