@@ -545,6 +545,7 @@ void __sendInternalStatus(){
 
 void __sendWdtToSlave(){
   rfSendToGateway("10","TASK1_OK");
+  rfSendToGateway("10","TASK2_OK"); //<--------------- DEBUG
 }
 
 

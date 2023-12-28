@@ -161,7 +161,7 @@ void updateSyncTime(String message){
     i++;
   }
   //Adjust RTC
-  rtc.adjust(DateTime(element[7].toInt(), element[6].toInt(), element[5].toInt(), element[4].toInt(), element[3].toInt(), element[2].toInt()));
+  rtc.adjust(DateTime(element[7].toInt(), element[6].toInt(), element[5].toInt(), element[2].toInt(), element[3].toInt(), element[4].toInt()));
   dev.time = rtc.now();
 }
 
