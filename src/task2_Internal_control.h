@@ -2,6 +2,7 @@
 #include "appfunc.h"
 #endif
 uint8_t findMaxVoltageDone = 0; //Flag to check if findMaxVoltage function is done or not
+extern void rfRxCheck();
 
 // Run every 100ms
 void task2 () {
@@ -35,7 +36,7 @@ void task2 () {
 
   //2. Update RTC timer every minute
   if (sendWdtCounter >= 600) {
-    //rfSendToGateway("10","TASK2_OK");
+    rfSendToGateway("10","TASK2_OK");
     sendWdtCounter = 0;
   }
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <ArduinoQueue.h>
-
+#define QUEUE_SIZE_ITEMS 5
+ArduinoQueue<String> rxQueue(QUEUE_SIZE_ITEMS);
+// ArduinoQueue<String> txQueue(QUEUE_SIZE_ITEMS);
 char UID[6]; //Unique ID of the controller
 String UIDStr = ""; //Unique ID of the controller
 String nodeType = "03" ; //Node type: 03: Controller
@@ -10,26 +12,16 @@ unsigned long lastJoinRequestTime = millis() - 60000; //Last time join request w
 bool setupDoneFlag = false; //Flag to check if setup process is done
 bool receivedA1Flag = false; //Reset receivedA1Flag
 bool joinReqDoneFlag = false; //Join request done flag
-//#define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
-//#define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
-//#define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
-
-#define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
-#define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
-#define SYNC_SCHEDULE_PERIOD_MS  20000 //Sync schedule period 900s = 15min
-
-//======= TX/RX QUEUE =======
+bool gotB0RequestFlag = false; //Flag to check if got B0 request
+#define WAIT_TIME_PACKET_SEC        30 //Wait time for packet in seconds
+#define SEND_STATUS_PERIOD_MS   120000 //Send status period 120s = 2min
+#define SYNC_SCHEDULE_PERIOD_MS 900000 //Sync schedule period 900s = 15min
 String rfRxData = ""; // Data received from serial port
-#define QUEUE_RX_SIZE_ITEMS 2
-#define QUEUE_TX_SIZE_ITEMS 5
-ArduinoQueue<String> rxQueue(QUEUE_RX_SIZE_ITEMS);
-ArduinoQueue<String> txQueue(QUEUE_TX_SIZE_ITEMS);
-bool lockRxQueueUartSide = false; //Lock rxQueue from UART side
-bool lockRxQueueTaskSide = false; //Lock rxQueue from task side
-bool lockTxQueueUartSide = false; //Lock txQueue from UART side
-bool lockTxQueueTaskSide = false; //Lock txQueue from task side
 
 
+// #define WAIT_TIME_PACKET_SEC         5 //Wait time for packet in seconds
+// #define SEND_STATUS_PERIOD_MS    10000 //Send status period 120s = 2min
+// #define SYNC_SCHEDULE_PERIOD_MS  20000 //Sync schedule period 900s = 15min
 
  
 //*************Define GPIO*************
@@ -86,19 +78,24 @@ bool lockTxQueueTaskSide = false; //Lock txQueue from task side
 #define CONTROL_OFF      0
 #define ON_STATUS        1
 #define OFF_STATUS       0
+#define UNKNOWN        255
+#define MANUAL_OFF       0
+#define MANUAL_ON        1
+#define AUTO_OFF         2
+#define AUTO_ON          3
 
 //***************************************
-#define TFT_DC        49
-#define TFT_CS        53
-#define TFT_RST       48
-#define TFT_MISO      50
-#define TFT_MOSI      51
-#define TFT_CLK       52
-#define TFL_BACKLIGHT 35
-#define LCD_ON         1
-#define LCD_OFF        0
-#define FORCED_UPDATE  1
-#define NORMAL_UPDATE  0
+#define TFT_DC          49
+#define TFT_CS          53
+#define TFT_RST         48
+#define TFT_MISO        50
+#define TFT_MOSI        51
+#define TFT_CLK         52
+#define TFL_BACKLIGHT   35
+#define LCD_ON           1
+#define LCD_OFF          0
+#define FORCED_UPDATE    1
+#define NORMAL_UPDATE    0
 //***************************************
 //EEPROM address
 // #define ADDR_CH1_OPER_STS      0

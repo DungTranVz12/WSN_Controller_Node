@@ -18,12 +18,12 @@ struct channelInfo {
   uint8_t  listVoltIndex = 0; //Index of listVolt array.
   uint16_t listCurrent[20] = {0}; //List of latest 20 values of current of each channel.
   uint8_t  listCurrentIndex = 0; //Index of listCurrent array.
-  uint8_t i_contactorStatus = OFF_STATUS; //0: OFF, 1: ON. Directly read from relay/Contactor.
+  uint8_t i_contactorStatus = CONTROL_OFF; //0: OFF, 1: ON. Directly read from relay/Contactor.
   bool    remoteControlFlag = false; //Khi nhận được yêu cầu remote control trong chế độ AUTO MODE thì cờ này bật lên và chiếm quyền Schedule.  
   uint8_t autoControl = CONTROL_OFF; //0: OFF, 1: ON. Control in AUTO MODE bởi schedule hoặc remote control.
   uint8_t i_switchMode = MANUAL_MODE; //MANUAL_MODE/AUTO_MODE. Directly read from switch.
   bool    inScheduleFlag = false; //0: Not in schedule, 1: In schedule
-  uint8_t  lastControlStatus = 0; //0: Unknow, 1: MANUAL_OFF, 2: MANUAL_ON, 3: AUTO_OFF, 4: AUTO_ON
+  uint8_t  lastControlStatus = UNKNOWN; //0: MANUAL_OFF, 1: MANUAL_ON, 2: AUTO_OFF, 3: AUTO_ON, 255: UNKNOWN
   uint32_t scheduleOper[20][2]; //Schedule operation time of each channel.
 };
 
@@ -59,10 +59,7 @@ void SHT21_Read(){
 
 void delayForLowPrioTask(uint32_t delayMs){
   unsigned long startTimeMs = millis();
-  unsigned long i = 0;
-  while (millis()-startTimeMs<=delayMs){
-    i += 1;
-  };
+  while (millis()-startTimeMs<=delayMs);
 }
 
 //***********************ADC reading**************************

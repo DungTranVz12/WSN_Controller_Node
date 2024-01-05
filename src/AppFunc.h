@@ -8,7 +8,7 @@
 #define EEPROM_ADDR_INIT     0 //EEPROM address to store init code
 
 #define EEPROM_ADDR_SCHEDULE 100 //EEPROM address to store schedule
-#define EEPROM_SCHEDULE_MAX    1 //EEPROM address to store schedule
+#define EEPROM_SCHEDULE_MAX    4 //EEPROM address to store schedule
 #define EEPROM_SCHEDULE_SIZE  15 //EEPROM address to store schedule
 
 uint16_t reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
@@ -21,6 +21,7 @@ extern void rfSendToGateway(String cmdResp, String payload);
 extern String waitCommandWithString(String header, String str, uint16_t timeOutSec);
 extern void updateSyncTime(String message);
 extern void rfRespToGateway(String cmdResp, String statusResp);
+extern void rfRxCheck();
 
 struct schedule_t {
   uint16_t SID = 0; //Schedule ID
@@ -40,7 +41,8 @@ struct schedule_t {
                          //Thursday repeat:  0b00010000
                          //Friday repeat:    0b00100000
                          //Saturday repeat:  0b01000000
-
+  uint16_t fromDate = 0; //From date. Format: DDMMYYYY
+  uint16_t untilDate = 0; //Until date. Format: DDMMYYYY
   uint8_t fromDay = 0; //From day of month
   uint8_t fromMonth = 0; //From month
   uint8_t fromYear = 0; //From year. 0 mean 2000 year.
@@ -58,13 +60,13 @@ void checkInitEEPROM(){
   //Print initCode in HEX
   //Serial.print(F("       => initCode: "));Serial.println(initCode, HEX);
   if (initCode != EEPROM_INIT_CODE) {
-    Serial.println(F("       => EEPROM is not initialized!"));
-    Serial.println(F("       => Initializing EEPROM..."));
+    //Serial.println(F("       => EEPROM is not initialized!"));
+    //Serial.println(F("       => Initializing EEPROM..."));
     //1. Write init code to EEPROM
     EEPROM.write(EEPROM_ADDR_INIT+1, EEPROM_INIT_CODE >> 8);
     EEPROM.write(EEPROM_ADDR_INIT  , EEPROM_INIT_CODE & 0x00FF);
     initCode = EEPROM.read(EEPROM_ADDR_INIT + 1) << 8 | EEPROM.read(EEPROM_ADDR_INIT);
-    Serial.print(F("       => initCode (After): "));Serial.println(initCode, HEX);
+    //Serial.print(F("       => initCode (After): "));Serial.println(initCode, HEX);
     //2. Write 0 to all schedules (EEPROM_SCHEDULE_MAX) in EEPROM from EEPROM_ADDR_SCHEDULE. Each schedule has size of EEPROM_SCHEDULE_SIZE.
     for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
       EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 0, 0); //SID
@@ -81,7 +83,7 @@ void checkInitEEPROM(){
       EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 11, 0); //untilDate
       EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 12, 0); //untilDate
     }
-    Serial.println(F("       => EEPROM is initialized!"));
+    //Serial.println(F("       => EEPROM is initialized!"));
   }
 }
 
@@ -111,25 +113,26 @@ void loadScheduleToRAM(){
       scheduleList[i].untilYear       = (untilDate & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
 
       //Print out all schedules to Serial
-      //Serial.print(F("\n=== ["));Serial.print(i);Serial.print(F("] Schedule at adress "));Serial.print(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE);Serial.println(F(" ==="));
-      //Serial.print(F("SID: "));Serial.println(scheduleList[i].SID);
-      //Serial.print(F("SVer: "));Serial.println(scheduleList[i].SVer);
-      //Serial.print(F("enableFlag: "));Serial.println(scheduleList[i].enableFlag);
-      //Serial.print(F("channel: "));Serial.println(scheduleList[i].channel);
-      //Serial.print(F("repeatUntilFlag: "));Serial.println(scheduleList[i].repeatUntilFlag);
-      //Serial.print(F("repeatMode: "));Serial.println(scheduleList[i].repeatMode);
-      //Serial.print(F("weakdays: "));Serial.println(scheduleList[i].weakdays);
-      //Serial.print(F("fromDay: "));Serial.println(scheduleList[i].fromDay);
-      //Serial.print(F("fromMonth: "));Serial.println(scheduleList[i].fromMonth);
-      //Serial.print(F("fromYear: "));Serial.println(scheduleList[i].fromYear);
-      //Serial.print(F("fromTimeMin: "));Serial.println(scheduleList[i].fromTimeMin);
-      //Serial.print(F("toTimeMin: "));Serial.println(scheduleList[i].toTimeMin);
-      //Serial.print(F("untilDay: "));Serial.println(scheduleList[i].untilDay);
-      //Serial.print(F("untilMonth: "));Serial.println(scheduleList[i].untilMonth);
-      //Serial.print(F("untilYear: "));Serial.println(scheduleList[i].untilYear);
+      Serial.print(F("\n=== ["));Serial.print(i);Serial.print(F("] Schedule at adress "));Serial.print(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE);Serial.println(F(" ==="));
+      Serial.print(F("SID: "));Serial.println(scheduleList[i].SID);
+      Serial.print(F("SVer: "));Serial.println(scheduleList[i].SVer);
+      Serial.print(F("enableFlag: "));Serial.println(scheduleList[i].enableFlag);
+      Serial.print(F("channel: "));Serial.println(scheduleList[i].channel);
+      Serial.print(F("repeatUntilFlag: "));Serial.println(scheduleList[i].repeatUntilFlag);
+      Serial.print(F("repeatMode: "));Serial.println(scheduleList[i].repeatMode);
+      Serial.print(F("weakdays: "));Serial.println(scheduleList[i].weakdays);
+      Serial.print(F("fromDay: "));Serial.println(scheduleList[i].fromDay);
+      Serial.print(F("fromMonth: "));Serial.println(scheduleList[i].fromMonth);
+      Serial.print(F("fromYear: "));Serial.println(scheduleList[i].fromYear);
+      Serial.print(F("fromTimeMin: "));Serial.println(scheduleList[i].fromTimeMin);
+      Serial.print(F("toTimeMin: "));Serial.println(scheduleList[i].toTimeMin);
+      Serial.print(F("untilDay: "));Serial.println(scheduleList[i].untilDay);
+      Serial.print(F("untilMonth: "));Serial.println(scheduleList[i].untilMonth);
+      Serial.print(F("untilYear: "));Serial.println(scheduleList[i].untilYear);
+      Serial.print(F("\n"));
     }
   }
-  //Serial.println(F("       => Loading schedules from EEPROM to RAM done!"));
+  Serial.println(F("       => Loading schedules from EEPROM to RAM done!"));
 }
 
 /**
@@ -245,20 +248,20 @@ void __updateScheduleToEEPROM(schedule_t schedule, uint8_t scheduleIndex=0){
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  2, scheduleList[scheduleIndex].SVer); //SVer
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  3, scheduleList[scheduleIndex].weakdays); //SVer
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  4, scheduleList[scheduleIndex].enableFlag << 7 | scheduleList[scheduleIndex].channel << 4 | scheduleList[scheduleIndex].repeatUntilFlag << 3 | scheduleList[scheduleIndex].repeatMode); //channel, repeatUntilFlag, repeatMode
-  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  5, scheduleList[scheduleIndex].fromDay & 0x00FF); //fromDate
-  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  6, scheduleList[scheduleIndex].fromDay >> 8); //fromDate
+  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  5, scheduleList[scheduleIndex].fromDate & 0x00FF); //fromDate
+  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  6, scheduleList[scheduleIndex].fromDate >> 8); //fromDate
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  7, scheduleList[scheduleIndex].fromTimeMin & 0x00FF); //fromTimeMin
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  8, scheduleList[scheduleIndex].fromTimeMin >> 8); //fromTimeMin
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE +  9, scheduleList[scheduleIndex].toTimeMin & 0x00FF); //toTimeMin
   EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE + 10, scheduleList[scheduleIndex].toTimeMin >> 8); //toTimeMin
-  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE + 11, scheduleList[scheduleIndex].untilDay & 0x00FF); //untilDate
-  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE + 12, scheduleList[scheduleIndex].untilDay >> 8); //untilDate
+  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE + 11, scheduleList[scheduleIndex].untilDate & 0x00FF); //untilDate
+  EEPROM.update(EEPROM_ADDR_SCHEDULE + scheduleIndex*EEPROM_SCHEDULE_SIZE + 12, scheduleList[scheduleIndex].untilDate >> 8); //untilDate
 }
 
 void __removeScheduleNotInList(uint16_t alreadySyncSID[], uint8_t alreadySyncSIDIndex, uint16_t reqSyncSID[], uint8_t reqSyncSIDIndex){
   //A. Remove all schedule in scheduleList which does not exist in alreadySyncSID list and reqSyncSID list
   for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
-    if (scheduleList[i].enableFlag && scheduleList[i].SID != 0) { //SID = 0 is not used
+    if (scheduleList[i].enableFlag || scheduleList[i].SID != 0) {
       bool foundFlag = false;
       for (int j = 0; j < alreadySyncSIDIndex; j++) {
         if (scheduleList[i].SID == alreadySyncSID[j]) {
@@ -276,10 +279,14 @@ void __removeScheduleNotInList(uint16_t alreadySyncSID[], uint8_t alreadySyncSID
       }
       if (foundFlag == false) {
         scheduleList[i].enableFlag = false; //Disable schedule
+        scheduleList[i].SID = 0; //Clear SID
         //Clear enableFlag bit at bit 7 of byte 3 in EEPROM
         uint8_t byte4 = EEPROM.read(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 4);
         byte4 = byte4 & 0b01111111;
         EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 4, byte4);
+        //Clear SID in EEPROM
+        EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 0, 0);
+        EEPROM.update(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + 1, 0);
       }
     }
   }
@@ -287,16 +294,20 @@ void __removeScheduleNotInList(uint16_t alreadySyncSID[], uint8_t alreadySyncSID
 
 void __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(String payload){
   int payloadLen = payload.length();
-  int payloadIndex = 0;
-  int SID = 0;
-  int Sver = 0;
+  unsigned long SID = 0;
+  unsigned long Sver = 0;
   int SIDIndex = 0;
   int SverIndex = 0;
-  while (payloadIndex < payloadLen) {
-    SIDIndex = payload.indexOf(',', payloadIndex);
-    SID = payload.substring(payloadIndex, SIDIndex).toInt();
+  while (payloadLen > 0) {
+    SIDIndex = payload.indexOf(',', 0);
+    SID = payload.substring(0, SIDIndex).toDouble();
     SverIndex = payload.indexOf(',', SIDIndex + 1);
     Sver = payload.substring(SIDIndex + 1, SverIndex).toInt();
+
+    //Serial.print(F("Payload: "));Serial.println(payload);
+    //Serial.print(F("=> SID: "));Serial.println(SID);
+    //Serial.print(F("=> Sver: "));Serial.println(Sver);
+
     //2. Check if SID is in scheduleList
     if (SID != 0){ //SID = 0 is not used
       for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
@@ -304,30 +315,72 @@ void __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(String pay
           //3. If SID is in scheduleList, check Sver
           if (scheduleList[i].SVer != Sver) {
             //4. If Sver is not match, add SID to reqSyncSID list
-            reqSyncSID[reqSyncSIDIndex] = SID;
-            reqSyncSIDIndex++;
+            //Kiểm tra trong reqSyncSID có phần tử nào giống SID không? Nếu không có thì mới gán vào.
+            bool foundFlag = false;
+            for (int j = 0; j < reqSyncSIDIndex; j++) {
+              if (reqSyncSID[j] == SID) {
+                foundFlag = true;
+                break;
+              }
+            }
+            if (foundFlag == false) {
+              //Serial.print(F("Add SID to reqSyncSID list: "));Serial.print(SID);Serial.print(" At: ");Serial.println(reqSyncSIDIndex);
+              reqSyncSID[reqSyncSIDIndex] = SID;
+              reqSyncSIDIndex++;
+            }
+            break;
           }
           else{
             //5. If Sver is match, add SID to alreadySyncSID list
-            alreadySyncSID[alreadySyncSIDIndex] = SID;
-            alreadySyncSIDIndex++;
+            //Kiểm tra trong reqSyncSID có phần tử nào giống SID không? Nếu không có thì mới gán vào.
+            bool foundFlag = false;
+            for (int j = 0; j < alreadySyncSIDIndex; j++) {
+              if (alreadySyncSID[j] == SID) {
+                foundFlag = true;
+                break;
+              }
+            }
+            if (foundFlag == false) {
+              //Serial.print(F("Add SID to alreadySyncSID list: "));Serial.print(SID);Serial.print(" At: ");Serial.println(alreadySyncSIDIndex);
+              alreadySyncSID[alreadySyncSIDIndex] = SID;
+              alreadySyncSIDIndex++;
+            }
+            break;
           }
         }
-        if (i == EEPROM_SCHEDULE_MAX - 1) { //If i = EEPROM_SCHEDULE_MAX - 1, it means that SID is not in scheduleList
-          //5. If SID is not in scheduleList, add SID to reqSyncSID list
-          reqSyncSID[reqSyncSIDIndex] = SID;
-          reqSyncSIDIndex++;
+        if (i == EEPROM_SCHEDULE_MAX - 1) { //SID is not in scheduleList
+          //6. If SID is not in scheduleList, add SID to reqSyncSID list
+          //Kiểm tra trong reqSyncSID có phần tử nào giống SID không? Nếu không có thì mới gán vào.
+          bool foundFlag = false;
+          for (int j = 0; j < reqSyncSIDIndex; j++) {
+            if (reqSyncSID[j] == SID) {
+              foundFlag = true;
+              break;
+            }
+          }
+          if (foundFlag == false) {
+            //Serial.print(F("NEW SID to reqSyncSID list: "));Serial.print(SID);Serial.print(" At: ");Serial.println(reqSyncSIDIndex);
+            reqSyncSID[reqSyncSIDIndex] = SID;
+            reqSyncSIDIndex++;
+            break;
+          }
         }
       }
     }
-    payloadIndex = SverIndex + 1;
+    //Remove SID and Sver in payload
+    if (SverIndex == -1 || SIDIndex == -1) { //There is no more SID and Sver in payload
+      break;
+    }
+    else{
+      payload = payload.substring(SverIndex + 1);
+      payloadLen = payload.length();
+    }
   }
 }
 
 void __request_C2_A1_packet(){
   String log = "Time: " + rtc.now().timestamp() + " - >>> 1.1 Request C2 A1 packet... <<<";
   rfSendToGateway("E4",log); //Send response to Gateway
-  LED_DEBUG4
   //1. Send join request (C2) to gateway
   //2. Wait A1 response from gateway
   //3. If A1 response is received, update sync time
@@ -337,27 +390,19 @@ void __request_C2_A1_packet(){
   while (true) {
     //1. Send join request (C2) to gateway
     rfSendToGateway("C2",fwVer+",JOIN_REQ"); //Send join request to Gateway
-    LED_DEBUG5
     //2. Wait A1 response from gateway in WAIT_TIME_PACKET_SEC
-    String A1Data = "";
-//TAMBO    A1Data = waitCommandWithString("A1",",",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
-    LED_DEBUG6
+    String A1Data = waitCommandWithString("A1",",",WAIT_TIME_PACKET_SEC); //Header = A1, String = "", timeout = WAIT_TIME_PACKET_SEC
     //3. If A1 response is received, break loop
     if (A1Data != "") { //If A1Data is not empty
-      LED_DEBUG7
       updateSyncTime(String(A1Data)); //Update sync time
-      LED_DEBUG8
       //4. Send A1 OK response to gateway
       rfRespToGateway("A1","OK"); //Send response to Gateway
-      LED_DEBUG9
       receivedA1Flag = true; //Set receivedA1Flag
       break;
     }
     else{
-      LED_DEBUG10
       //If retryCounter >= 3, break loop
       if (retryCounter >= 3) {
-        LED_DEBUG11
         break;
       }
       retryCounter++; //Increase retryCounter
@@ -369,9 +414,15 @@ void __request_C2_A1_packet(){
 //Nếu có thì cập nhật lại dữ liệu cho schedule đó và ghi vào EEPROM
 //Nếu không có thì tìm schedule đầu tiên có enableFlag = false và cập nhật lại dữ liệu cho schedule đó và ghi vào EEPROM
 void __processSyncScheduleABPacket(String syncScheduleData){
+  //Serial.print(F("       => Processing sync schedule AB packet...:"));
+  //Serial.println(syncScheduleData);
+
   //Decode syncScheduleData and update to scheduleList which has SID = reqSyncSID[i]
   int commaIndex = syncScheduleData.indexOf(',');
   String header = syncScheduleData.substring(0, commaIndex);
+  syncScheduleData = syncScheduleData.substring(commaIndex + 1);
+  commaIndex = syncScheduleData.indexOf(',');
+  String gwUid = syncScheduleData.substring(0, commaIndex);
   syncScheduleData = syncScheduleData.substring(commaIndex + 1);
   commaIndex = syncScheduleData.indexOf(',');
   String command = syncScheduleData.substring(0, commaIndex);
@@ -408,57 +459,89 @@ void __processSyncScheduleABPacket(String syncScheduleData){
   syncScheduleData = syncScheduleData.substring(commaIndex + 1);
   String untilDate = syncScheduleData;
 
+  // Serial.print(F("       => SID: "));Serial.println(SID);
+  // Serial.print(F("       => Sver: "));Serial.println(Sver);
+  // Serial.print(F("       => enableFlag: "));Serial.println(enableFlag);
+  // Serial.print(F("       => channel: "));Serial.println(channel);
+  // Serial.print(F("       => repeatUntilFlag: "));Serial.println(repeatUntilFlag);
+  // Serial.print(F("       => repeatMode: "));Serial.println(repeatMode);
+  // Serial.print(F("       => weakdays: "));Serial.println(weakdays);
+  // Serial.print(F("       => fromDate: "));Serial.println(fromDate);
+  // Serial.print(F("       => fromTimeMin: "));Serial.println(fromTimeMin);
+  // Serial.print(F("       => toTimeMin: "));Serial.println(toTimeMin);
+  // Serial.print(F("       => untilDate: "));Serial.println(untilDate);
+
   // Update scheduleList with the extracted values
   // Find the schedule with SID = reqSyncSID[i] then update it
   for (int j = 0; j < EEPROM_SCHEDULE_MAX; j++) {
     if (scheduleList[j].SID == SID.toInt()) {
-      //scheduleList[j].SID = SID.toInt();
-      scheduleList[j].SVer = Sver.toInt();
-      scheduleList[j].enableFlag = (enableFlag.toInt() == 1) ? true : false; //Convert enableFlag to bool
-      scheduleList[j].channel = channel.toInt();
-      scheduleList[j].repeatUntilFlag = (repeatUntilFlag.toInt() == 1) ? true : false; //Convert repeatUntilFlag to bool
-      scheduleList[j].repeatMode = repeatMode.toInt();
-      scheduleList[j].weakdays = weakdays.toInt();
-      scheduleList[j].fromDay = fromDate.toInt() & 0x001F; //Get 5 LSB bits
-      scheduleList[j].fromMonth = (fromDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
-      scheduleList[j].fromYear = (fromDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
-      scheduleList[j].fromTimeMin = fromTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
-      scheduleList[j].toTimeMin = toTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
-      scheduleList[j].untilDay = untilDate.toInt() & 0x001F; //Get 5 LSB bits
-      scheduleList[j].untilMonth = (untilDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
-      scheduleList[j].untilYear = (untilDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
-      //Update all schedule data to EEPROM
-      __updateScheduleToEEPROM(scheduleList[j], j);
-      break;
-    }
-    //If j = EEPROM_SCHEDULE_MAX - 1, it means that SID is not in scheduleList
-    //Then, find the first schedule which has enableFlag = false and update it
-    if (j == EEPROM_SCHEDULE_MAX - 1) {
-      for (int k = 0; k < EEPROM_SCHEDULE_MAX; k++) {
-        if (scheduleList[k].enableFlag == false) {
-          scheduleList[k].SID = SID.toInt();
-          scheduleList[k].SVer = Sver.toInt();
-          scheduleList[k].enableFlag = (enableFlag.toInt() == 1) ? true : false; //Convert enableFlag to bool
-          scheduleList[k].channel = channel.toInt();
-          scheduleList[k].repeatUntilFlag = (repeatUntilFlag.toInt() == 1) ? true : false; //Convert repeatUntilFlag to bool
-          scheduleList[k].repeatMode = repeatMode.toInt();
-          scheduleList[k].weakdays = weakdays.toInt();
-          scheduleList[k].fromDay = fromDate.toInt() & 0x001F; //Get 5 LSB bits
-          scheduleList[k].fromMonth = (fromDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
-          scheduleList[k].fromYear = (fromDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
-          scheduleList[k].fromTimeMin = fromTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
-          scheduleList[k].toTimeMin = toTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
-          scheduleList[k].untilDay = untilDate.toInt() & 0x001F; //Get 5 LSB bits
-          scheduleList[k].untilMonth = (untilDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
-          scheduleList[k].untilYear = (untilDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
-
-          //Update all schedule data to EEPROM
-          __updateScheduleToEEPROM(scheduleList[k], k);
-          break;
-        }
+      if (scheduleList[j].SVer != Sver.toInt()) {
+        //Serial.print(F("Update schedule in EEPROM:"));
+        //Serial.println(j);
+        //scheduleList[j].SID = SID.toInt();
+        scheduleList[j].SVer = Sver.toInt();
+        scheduleList[j].enableFlag = (enableFlag.toInt() == 1) ? true : false; //Convert enableFlag to bool
+        scheduleList[j].channel = channel.toInt();
+        scheduleList[j].repeatUntilFlag = (repeatUntilFlag.toInt() == 1) ? true : false; //Convert repeatUntilFlag to bool
+        scheduleList[j].repeatMode = repeatMode.toInt();
+        scheduleList[j].weakdays = weakdays.toInt();
+        //fromDate is a string of yymmdd.
+        //Convert fromDate to uint16_t
+        scheduleList[j].fromDate = fromDate.toInt();
+        scheduleList[j].fromDay = fromDate.toInt() & 0x001F; //Get 5 LSB bits
+        scheduleList[j].fromMonth = (fromDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
+        scheduleList[j].fromYear = (fromDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
+        scheduleList[j].fromTimeMin = fromTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
+        scheduleList[j].toTimeMin = toTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
+        scheduleList[j].untilDate = untilDate.toInt();
+        scheduleList[j].untilDay = untilDate.toInt() & 0x001F; //Get 5 LSB bits
+        scheduleList[j].untilMonth = (untilDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
+        scheduleList[j].untilYear = (untilDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
+        //Update all schedule data to EEPROM
+        __updateScheduleToEEPROM(scheduleList[j], j);
+        return;
+      }
+      else{
+        //Serial.println(F("Schedule is already in EEPROM"));
+        return;
       }
     }
   }
+
+
+
+
+
+  //If j = EEPROM_SCHEDULE_MAX - 1, it means that SID is not in scheduleList
+  //Then, find the first schedule which has enableFlag = false and update it
+  //Serial.print(F("New schedule in EEPROM -> "));
+  for (int k = 0; k < EEPROM_SCHEDULE_MAX; k++) {
+    if (scheduleList[k].enableFlag == false) {
+      //Serial.println(k);
+      scheduleList[k].SID = SID.toInt();
+      scheduleList[k].SVer = Sver.toInt();
+      scheduleList[k].enableFlag = (enableFlag.toInt() == 1) ? true : false; //Convert enableFlag to bool
+      scheduleList[k].channel = channel.toInt();
+      scheduleList[k].repeatUntilFlag = (repeatUntilFlag.toInt() == 1) ? true : false; //Convert repeatUntilFlag to bool
+      scheduleList[k].repeatMode = repeatMode.toInt();
+      scheduleList[k].weakdays = weakdays.toInt();
+      scheduleList[k].fromDate = fromDate.toInt();
+      scheduleList[k].fromDay = fromDate.toInt() & 0x001F; //Get 5 LSB bits
+      scheduleList[k].fromMonth = (fromDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
+      scheduleList[k].fromYear = (fromDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
+      scheduleList[k].fromTimeMin = fromTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
+      scheduleList[k].toTimeMin = toTimeMin.toInt() & 0x0FFF; //Get 12 LSB bits
+      scheduleList[k].untilDate = untilDate.toInt();
+      scheduleList[k].untilDay = untilDate.toInt() & 0x001F; //Get 5 LSB bits
+      scheduleList[k].untilMonth = (untilDate.toInt() & 0x01E0) >> 5; //Get 4 bits from bit 5 to bit 8
+      scheduleList[k].untilYear = (untilDate.toInt() & 0xFE00) >> 9; //Get 7 bits from bit 9 to bit 15
+
+      //Update all schedule data to EEPROM
+      __updateScheduleToEEPROM(scheduleList[k], k);
+      return;
+    }
+  }
+  rfSendToGateway("E4","No schedule slot in EEPROM");
 }
 
 
@@ -468,76 +551,90 @@ void __processSyncScheduleABPacket(String syncScheduleData){
 //If the channel is in AUTO_MODE, the function calls __controlChannelInAutoModeByScheduleList(checkedChannel) to control the channel based on a schedule list.
 // + If the auto control status is CONTROL_OFF, the status is set to "AUTO_OFF".
 // + If the auto control status is CONTROL_ON, the status is set to "AUTO_ON".
-String __controlInAutoScheduleAndGetChannelStatus(uint8_t checkedChannel = 1){
-  String channelControlStatus = "";
+uint8_t __controlInAutoScheduleAndGetChannelStatus(uint8_t checkedChannel = 1){
   if (dev.ch[checkedChannel].i_switchMode == MANUAL_MODE && dev.ch[checkedChannel].i_contactorStatus == CONTROL_OFF) {
-    channelControlStatus = "MANUAL_OFF";
+    return MANUAL_OFF;
   }
   else if (dev.ch[checkedChannel].i_switchMode == MANUAL_MODE && dev.ch[checkedChannel].i_contactorStatus == CONTROL_ON) {
-    channelControlStatus = "MANUAL_ON";
+    return MANUAL_ON;
   }
   if (dev.ch[checkedChannel].i_switchMode == AUTO_MODE) {
     __controlChannelInAutoModeByScheduleList(checkedChannel); //Check channel 1
     if (dev.ch[checkedChannel].autoControl == CONTROL_OFF) {
-      channelControlStatus = "AUTO_OFF";
+      return AUTO_OFF;
     }
     else if (dev.ch[checkedChannel].autoControl == CONTROL_ON) {
-      channelControlStatus = "AUTO_ON";
+      return AUTO_ON;
     }
   }
-  return channelControlStatus;
+  return MANUAL_OFF;
 }
 
 
 
-int __convertStringControlStatusToInt(String channelControlStatus){
-  if (channelControlStatus == "MANUAL_OFF") return 1;
-  if (channelControlStatus == "MANUAL_ON") return 2;
-  if (channelControlStatus == "AUTO_OFF") return 3;
-  if (channelControlStatus == "AUTO_ON") return 4;
-  return 0;
-}
-String __convertIntControlStatusToString(int intControlStatus){
-  if (intControlStatus == 1) return "MANUAL_OFF";
-  if (intControlStatus == 2) return "MANUAL_ON";
-  if (intControlStatus == 3) return "AUTO_OFF";
-  if (intControlStatus == 4) return "AUTO_ON";
-  return "MANUAL_OFF";
+//int __convertStringControlStatusToInt(String channelControlStatus){
+//  if (channelControlStatus == "MANUAL_OFF") return 1;
+//  if (channelControlStatus == "MANUAL_ON") return 2;
+//  if (channelControlStatus == "AUTO_OFF") return 3;
+//  if (channelControlStatus == "AUTO_ON") return 4;
+//  return 0;
+//}
+//String __convertIntControlStatusToString(int intControlStatus){
+//  if (intControlStatus == 1) return "MANUAL_OFF";
+//  if (intControlStatus == 2) return "MANUAL_ON";
+//  if (intControlStatus == 3) return "AUTO_OFF";
+//  if (intControlStatus == 4) return "AUTO_ON";
+//  return "MANUAL_OFF";
+//}
+
+String __convertControlStatusToString (uint8_t controlStatus){
+  if (controlStatus == MANUAL_OFF) return "0,MANUAL_OFF";
+  if (controlStatus == MANUAL_ON)  return "1,MANUAL_ON" ;
+  if (controlStatus == AUTO_OFF)   return "2,AUTO_OFF"  ;
+  if (controlStatus == AUTO_ON)    return "3,AUTO_ON"   ;
+  return "None,None";
 }
 
 void __checkChannelSwitchAndSchedule(){
-  String controlStatus = "";
-  uint8_t channel1ControlStatus, channel2ControlStatus, channel3ControlStatus, channel4ControlStatus;
+  uint8_t channel1ControlStatus,channel2ControlStatus,channel3ControlStatus,channel4ControlStatus;
+  String message = "";
+  channel1ControlStatus = __controlInAutoScheduleAndGetChannelStatus(1);
+  channel2ControlStatus = __controlInAutoScheduleAndGetChannelStatus(2);
+  channel3ControlStatus = __controlInAutoScheduleAndGetChannelStatus(3);
+  channel4ControlStatus = __controlInAutoScheduleAndGetChannelStatus(4);
 
-  controlStatus = __controlInAutoScheduleAndGetChannelStatus(1);
-  channel1ControlStatus = __convertStringControlStatusToInt(controlStatus);
-  controlStatus = __controlInAutoScheduleAndGetChannelStatus(2);
-  channel2ControlStatus = __convertStringControlStatusToInt(controlStatus);
-  controlStatus = __controlInAutoScheduleAndGetChannelStatus(3);
-  channel3ControlStatus = __convertStringControlStatusToInt(controlStatus);
-  controlStatus = __controlInAutoScheduleAndGetChannelStatus(4);
-  channel4ControlStatus = __convertStringControlStatusToInt(controlStatus);
-
-  //Compare channel1ControlStatus with ch.lastControlStatus[1]. If they are different, update ch.lastControlStatus[1] and send to gateway
   if (channel1ControlStatus != dev.ch[1].lastControlStatus && joinReqDoneFlag == true) {
     dev.ch[1].lastControlStatus = channel1ControlStatus;
-    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH1,"+__convertIntControlStatusToString(channel1ControlStatus)); //Send channel 1 status to Gateway
+    message += __convertControlStatusToString(channel1ControlStatus);
+    message += ",";
   }
-  //Compare channel2ControlStatus with ch.lastControlStatus[2]. If they are different, update ch.lastControlStatus[2] and send to gateway
+  else{
+    message += "None,None,";
+  }
   if (channel2ControlStatus != dev.ch[2].lastControlStatus && joinReqDoneFlag == true) {
     dev.ch[2].lastControlStatus = channel2ControlStatus;
-    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH2,"+__convertIntControlStatusToString(channel2ControlStatus)); //Send channel 2 status to Gateway
+    message += __convertControlStatusToString(channel2ControlStatus);
+    message += ",";
   }
-  //Compare channel3ControlStatus with ch.lastControlStatus[3]. If they are different, update ch.lastControlStatus[3] and send to gateway
+  else{
+    message += "None,None,";
+  }
   if (channel3ControlStatus != dev.ch[3].lastControlStatus && joinReqDoneFlag == true) {
     dev.ch[3].lastControlStatus = channel3ControlStatus;
-    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH3,"+__convertIntControlStatusToString(channel3ControlStatus)); //Send channel 3 status to Gateway
+    message += __convertControlStatusToString(channel3ControlStatus);
+    message += ",";
   }
-  //Compare channel4ControlStatus with ch.lastControlStatus[4]. If they are different, update ch.lastControlStatus[4] and send to gateway
+  else{
+    message += "None,None,";
+  }
   if (channel4ControlStatus != dev.ch[4].lastControlStatus && joinReqDoneFlag == true) {
     dev.ch[4].lastControlStatus = channel4ControlStatus;
-    rfSendToGateway("AC","UPDATE_CHANNEL_STATUS,CH4,"+__convertIntControlStatusToString(channel4ControlStatus)); //Send channel 4 status to Gateway
+    message += __convertControlStatusToString(channel4ControlStatus);
   }
+  else{
+    message += "None,None";
+  }
+  rfSendToGateway("C0","12,"+message);
 }
 
 //Send internal status to gateway: temperature, humidity, rfConnStatus, Vout, Iout of all channels
@@ -548,7 +645,7 @@ void __sendInternalStatus(){
   //Send rfConnStatus to gateway
   rfSendToGateway("C0","08,"+String(dev.rfConnStatus));
   //Send internal status to gateway of all channels from CH1 to CH4: CH1's Vout, CH1's Iout,....
-  rfSendToGateway("C0","10,"+String(dev.ch[1].Vout)+","+String(dev.ch[1].Iout)+String(dev.ch[2].Vout)+","+String(dev.ch[2].Iout)+String(dev.ch[3].Vout)+","+String(dev.ch[3].Iout)+String(dev.ch[4].Vout)+","+String(dev.ch[4].Iout));
+  rfSendToGateway("C0","10,"+String(dev.ch[1].Vout)+","+String(dev.ch[1].Iout)+","+String(dev.ch[2].Vout)+","+String(dev.ch[2].Iout)+","+String(dev.ch[3].Vout)+","+String(dev.ch[3].Iout)+","+String(dev.ch[4].Vout)+","+String(dev.ch[4].Iout));
 }
 
 
@@ -557,6 +654,18 @@ void __sendWdtToSlave(){
   rfSendToGateway("10","TASK2_OK"); //<--------------- DEBUG
 }
 
+void __printEepromMem(uint8_t scheduleNum){
+  Serial.println(F("       => EEPROM memory: "));
+  for (int i = 0; i < scheduleNum;i++){
+    Serial.println("[Schedule: " + String(i) + "]");
+    //Print EEPROM data in bytes
+    for (int j = 0; j < EEPROM_SCHEDULE_SIZE; j+=2) {
+      Serial.print  (EEPROM.read(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + j),BIN);
+      Serial.print (" ");
+      Serial.println(EEPROM.read(EEPROM_ADDR_SCHEDULE + i*EEPROM_SCHEDULE_SIZE + j+1),BIN);
+    }
+  }
+}
 
 void __SyncScheduleGatewayAndNode(){
   String log = "Time: " + rtc.now().timestamp() + " - >>> 1.2 Sync schedule between gateway and node... <<<";
@@ -565,7 +674,7 @@ void __SyncScheduleGatewayAndNode(){
   // Nếu gói là AB thì kiểm tra in AB.
   // Nếu gói là B0 thì kiểm tra in B0.
   // Nếu hết thời gian mà không có gói đến thì thoát khỏi quá trình JOIN NETWORK (Sẽ thực hiện sau)
-  uint16_t waitTimeSec = 120; //Wait time in second
+  uint16_t waitTimeSec = 60; //Wait time in second
   unsigned long waitTimeMark = millis(); //Wait time mark of 120s
   reqSyncSID[EEPROM_SCHEDULE_MAX] = {0}; //Request sync SID list to gateway
   reqSyncSIDIndex = 0; //Request sync SID list index
@@ -574,6 +683,7 @@ void __SyncScheduleGatewayAndNode(){
   bool scheduleSendFinishFlag = false; //Flag to indicate that schedule send finish or not (SCHEDULE_SEND_FINISH command)
   while (millis() - waitTimeMark <= waitTimeSec*1000){
     //Check Rx data
+    rfRxCheck();
     if (rxQueue.isEmpty() == false) {
       String rData = rxQueue.dequeue();
       int firstComma = rData.indexOf(',');
@@ -594,11 +704,12 @@ void __SyncScheduleGatewayAndNode(){
       // Ex: AB,<GW_UID>,SCHEDULE_SID_VER,<SID_1>,<Sver_1>,<SID_2>,<Sver_2>,….
       if (header == "AB" && command=="SCHEDULE_SID_VER") {
         waitTimeMark = millis(); //Reset waitTimeMark of 120s
+        scheduleSendFinishFlag = false; //Reset scheduleSendFinishFlag
         //a. Extract request sync SID and already sync SID from payload and store to reqSyncSID and alreadySyncSID
         //payload = <SID_1:uint16_t>,<Sver_1:uint8_t>,<SID_2:uint16_t>,<Sver_2:uint8_t>,….
         __extractRequestSyncAndAlreadySyncFromAB_SCHEDULE_SID_VER_Packet(payload);
         //b. Send AB OK response to gateway
-        rfRespToGateway("AB","SCHEDULE_SID_VER,OK"); //Send response to Gateway
+        rfRespToGateway("AB","OK"); //Send response to Gateway
       }
       //==========================================================
       // A2. Gateway inform node that it has sent all schedule to node
@@ -607,7 +718,7 @@ void __SyncScheduleGatewayAndNode(){
         //a. Set flag: scheduleSendFinishFlag = true
         scheduleSendFinishFlag = true; //Set scheduleSendFinishFlag
         //b. Send AB OK response to gateway
-        rfRespToGateway("AB","SCHEDULE_SEND_FINISH,OK"); //Send response to Gateway
+        rfRespToGateway("AB","OK"); //Send response to Gateway
       }
       //==========================================================
       // A3. Gateway finish sending package to node. B0 is the last package.
@@ -620,32 +731,59 @@ void __SyncScheduleGatewayAndNode(){
           return;
         }
         rfRespToGateway("B0","OK"); //Send response to Gateway
+        gotB0RequestFlag = true; //Set gotB0RequestFlag
+      }
 
-        //=============================================================
-        // B. NODE ACTING: CHECKS SCHEDULE AND REQ_SCHEDULE TO SYNC  //
-        //=============================================================
+      //=============================================================
+      // B. NODE ACTING: CHECKS SCHEDULE AND REQ_SCHEDULE TO SYNC  //
+      //=============================================================
+      if (scheduleSendFinishFlag && gotB0RequestFlag) {
         // B1.Remove all schedule in scheduleList which does not exist in alreadySyncSID list and reqSyncSID list
+
+
+
+
+        delayForLowPrioTask(1000);    // <------------- DEBUG
+        Serial.print(F("Already Sync ("));Serial.print(alreadySyncSIDIndex);Serial.print("): ");
+        for (int i = 0; i < alreadySyncSIDIndex; i++) {
+          Serial.print(alreadySyncSID[i]);
+          Serial.print(",");
+        }
+        Serial.println();
+        Serial.print(F("Request Sync ("));Serial.print(reqSyncSIDIndex);Serial.print("): ");
+        for (int i = 0; i < reqSyncSIDIndex; i++) {
+          Serial.print(reqSyncSID[i]);
+          Serial.print(",");
+        }
+        Serial.println();
+        delayForLowPrioTask(1000);    // <------------- DEBUG
+
+
+
+
         __removeScheduleNotInList(alreadySyncSID, alreadySyncSIDIndex, reqSyncSID, reqSyncSIDIndex);
 
         // B2. Send request sync schedule to gateway for each SID in reqSyncSID list
-        for (int i = 0; i < EEPROM_SCHEDULE_MAX; i++) {
+        for (int i = 0; i < reqSyncSIDIndex; i++) {
           if (reqSyncSID[i] != 0) {
-            //B2.1 Send AB "REQ_SCHEDULE" request to gateway
-            rfSendToGateway("AB","REQ_SCHEDULE,"+String(reqSyncSID[i])); //Send AB,REQ_SCHEDULE,<SID> to Gateway
-            //B2.2 Wait AB response from gateway
-            String syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",WAIT_TIME_PACKET_SEC); //Receive: AB,SEND_SCHEDULE,<SID>,<Sver>,<enableFlag>,<channel>,<repeatUntilFlag>,<repeatMode>,<weakdays>,<fromDate>,<fromTimeMin>,<toTimeMin>,<untilDate>
-            //B2.3 if syncScheduleData is not empty, update scheduleList
-            if (syncScheduleData != "") { //If syncScheduleData is not empty
-              __processSyncScheduleABPacket(String(syncScheduleData)); //Process sync schedule data
-              rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
-            } else {
-              break;
+            //Send request to gateway and wait response from gateway. Max retry is 3 times.
+            for (int j = 0; j < 3; j++) {
+              //B2.1 Send AB "REQ_SCHEDULE" request to gateway
+              rfSendToGateway("AB","REQ_SCHEDULE,"+String(reqSyncSID[i])); //Send AB,REQ_SCHEDULE,<SID> to Gateway
+              //B2.2 Wait AB response from gateway
+              String syncScheduleData = waitCommandWithString("AB","SEND_SCHEDULE",10);
+              //B2.3 if syncScheduleData is not empty, update scheduleList
+              if (syncScheduleData != "") { //If syncScheduleData is not empty
+                __processSyncScheduleABPacket(String(syncScheduleData)); //Process sync schedule data
+                rfRespToGateway("AB","OK"); //Send response to Gateway
+                break;
+              }
             }
           }
-          break;
         }
         // B3. Set joinReqDoneFlag = true
         joinReqDoneFlag = true;
+        break;
       }
     }
   }
@@ -695,33 +833,29 @@ class workingFlowClass {
     }
 
     void joinNetworkFlow(){
-      LED_DEBUG1
       String log = "Time: " + rtc.now().timestamp() + " - === 1. Goto JOIN NETWORK FLOW ===";
       rfSendToGateway("E4",log); //Send response to Gateway
-      LED_DEBUG2
       if (setupDoneFlag == true){
-        LED_DEBUG3
         __request_C2_A1_packet(); //Request C2 A1 packet
-//TAMBO        //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
-//TAMBO        if (receivedA1Flag == false) {
-//TAMBO          //Serial.println(F("       => Cannot join network!"));
-//TAMBO          //Serial.println(F("       => Exit join network flow!"));
-//TAMBO          return;
-//TAMBO        }
-//TAMBO        //Nếu nhận được A1 thì tiếp tục quá trình JOIN NETWORK bằng việc chờ gói tin đồng bộ schedule cho đến khi nhận được gói B0.
-//TAMBO 
-//TAMBO        //=====================================================================================
-//TAMBO        __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
+        //Nếu không nhận được A1 sau 3 lần retry thì chuyển tạm thời thoát khởi quá trình JOIN NETWORK
+        if (receivedA1Flag == false) {
+          //Serial.println(F("       => Cannot join network!"));
+          //Serial.println(F("       => Exit join network flow!"));
+          return;
+        }
+        //Nếu nhận được A1 thì tiếp tục quá trình JOIN NETWORK bằng việc chờ gói tin đồng bộ schedule cho đến khi nhận được gói B0.
+ 
+        //=====================================================================================
+        __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
       }
     };
-
-
 
     void normalWorkingFlow(){
       String log = "Time: " + rtc.now().timestamp() + " - === 2. Goto NORMAL WORKING FLOW ===";
       rfSendToGateway("E4",log); //Send response to Gateway
       unsigned long updateStatusTimeMarkMs = millis(); //Update status time mark. Send status to gateway every SEND_STATUS_PERIOD_MS
       unsigned long syncScheduleTimeMakMs = millis(); //Sync schedule time mark. Send sync schedule request to gateway every SYNC_SCHEDULE_PERIOD_MS
+      bool syncScheduleListNowFlag = false; //Flag to indicate that node is syncing schedule list now or not
       while (true) {
         //1. Check with SEND_STATUS_PERIOD_MS
         if (millis() - updateStatusTimeMarkMs >= SEND_STATUS_PERIOD_MS){
@@ -737,7 +871,11 @@ class workingFlowClass {
         }
         //2. Check with SYNC_SCHEDULE_PERIOD_MS
         //Node send request sync schedule to gateway ưith command REQ_SYNC_SCHEDULE_SID_SVER
-        if (millis() - syncScheduleTimeMakMs >= SYNC_SCHEDULE_PERIOD_MS){
+        if (millis() - syncScheduleTimeMakMs >= SYNC_SCHEDULE_PERIOD_MS || syncScheduleListNowFlag == true){
+          if (syncScheduleListNowFlag == true) {
+            rfSendToGateway("E4","DEBUG1"); //Send AB,REQ_SCHEDULE_SID_VER to Gateway // <--------------- DEBUG
+            syncScheduleListNowFlag = false; //Reset syncScheduleListNowFlag
+          }
           syncScheduleTimeMakMs = millis(); //Reset syncScheduleTimeMakMs
           //Send AB "REQ_SCHEDULE_SID_VER" request to gateway
           rfSendToGateway("AB","REQ_SCHEDULE_SID_VER"); //Send AB,REQ_SCHEDULE_SID_VER to Gateway
@@ -745,6 +883,7 @@ class workingFlowClass {
           __SyncScheduleGatewayAndNode(); //Sync schedule between gateway and node
         }
         //3. Nhận gói Schedule Configure từ gateway
+        rfRxCheck(); //Check Rx data
         if (rxQueue.isEmpty() == false) {
           String rData = rxQueue.dequeue();
           int firstComma = rData.indexOf(',');
@@ -761,9 +900,9 @@ class workingFlowClass {
 
           //=====================================================
           //3.1 Get SEND_SCHEDULE command from gateway
-          if (header == "AB" && command=="SEND_SCHEDULE") {
-            __processSyncScheduleABPacket(rData);
-            rfRespToGateway("AB","SEND_SCHEDULE,OK"); //Send response to Gateway
+          if (header == "AC" && command=="REQ_UPDATE_CHANGE_SCHEDULE") {
+            syncScheduleListNowFlag = true; //Set syncScheduleListNowFlag
+            rfRespToGateway("AC","OK"); //Send response to Gateway
           }
           //==========================================================
           //3.2 Get SEND_SCHEDULE command from gateway
@@ -814,8 +953,9 @@ class workingFlowClass {
             }
             //Delay to update status at channel
             delayForLowPrioTask(1000); //Delay 1s
-            rfRespToGateway("AC","REMOTE_CONTROL,OK"); //Send response to Gateway
+            rfRespToGateway("AC","OK"); //Send response to Gateway
             __checkChannelSwitchAndSchedule(); //Node update status of channel to gateway
+            updateStatusTimeMarkMs = millis(); //Reset updateStatusTimeMarkMs
           }
         }
       }
@@ -825,10 +965,10 @@ class workingFlowClass {
 
     void mainFlow(){
       joinNetworkFlow();
-      //__checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
-      //__sendInternalStatus(); //Send internal status to gateway
-      //__sendWdtToSlave(); //Send WDT to slave
-      //normalWorkingFlow(); //Loop forever if joinReqDoneFlag = true
+      __checkChannelSwitchAndSchedule(); //Check channel's switch status. Control channel as scheduleList if switch is AUTO_MODE.
+      __sendInternalStatus(); //Send internal status to gateway
+      __sendWdtToSlave(); //Send WDT to slave
+      normalWorkingFlow(); //Loop forever if joinReqDoneFlag = true
     }
 
 
